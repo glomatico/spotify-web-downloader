@@ -14,8 +14,8 @@ A Python script to download songs/albums/playlists directly from Spotify in AAC 
 4. Export your Spotify cookies as `cookies.txt` and put it in the same folder as the script
     * You can export your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
     * You can also specify the cookies file location using the `--cookies-location` argument.
-5. Put your L3 CDM (`device_client_id_blob` and `device_private_key` files) on `pywidevine/L3/cdm/devices/android_generic` folder
-    * You can get your L3 CDM by using wvdumper: https://github.com/wvdumper/dumper
+5. Put your L3 Widevine Keys (`device_client_id_blob` and `device_private_key` files) on `pywidevine/L3/cdm/devices/android_generic` folder
+    * You can get your L3 Widevine Keys by using wvdumper: https://github.com/wvdumper/dumper
 
 ## Usage
 ```
