@@ -140,6 +140,7 @@ class SpotifyAacDownloader:
         wvkeys = wvkeys[0]
         return wvkeys
     
+    
     def get_stream_url(self, file_id):
         return self.session.get(
             f'https://gue1-spclient.spotify.com/storage-resolve/v2/files/audio/interactive/11/{file_id}?version=10000000&product=9&platform=39&alt=json'
@@ -194,7 +195,7 @@ class SpotifyAacDownloader:
         return tags
     
 
-    def get_sanizated_string(self, dirty_string, is_folder = False):
+    def get_sanizated_string(self, dirty_string, is_folder):
         illegal_characters = ['\\', '/', ':', '*', '?', '"', '<', '>', '|', ';']
         for character in illegal_characters:
             dirty_string = dirty_string.replace(character, '_')
@@ -208,22 +209,23 @@ class SpotifyAacDownloader:
     
 
     def get_encrypted_location(self, track_id):
-        return Path(self.temp_path) / f'{track_id}_encrypted.m4a'
+        return self.temp_path / f'{track_id}_encrypted.m4a'
 
     
     def get_decrypted_location(self, track_id):
-        return Path(self.temp_path) / f'{track_id}_decrypted.m4a'
+        return self.temp_path / f'{track_id}_decrypted.m4a'
     
 
     def get_fixed_location(self, track_id):
-        return Path(self.temp_path) / f'{track_id}_fixed.m4a'
+        return self.temp_path / f'{track_id}_fixed.m4a'
     
 
     def get_final_location(self, tags):
         if tags['disk'][0][1] > 1:
-            return Path(self.final_path) / self.get_sanizated_string(tags['aART'][0], True) / self.get_sanizated_string(tags['\xa9alb'][0]) / (self.get_sanizated_string(f'{tags["disk"][0][0]}-{tags["trkn"][0][0]:02d} {tags["©nam"][0]}') + '.m4a')
+            file_name = self.get_sanizated_string(f'{tags["disk"][0][0]}-{tags["trkn"][0][0]:02d} {tags["©nam"][0]}', False) + '.m4a'
         else:
-            return Path(self.final_path) / self.get_sanizated_string(tags['aART'][0], True) / self.get_sanizated_string(tags['\xa9alb'][0]) / (self.get_sanizated_string(f'{tags["trkn"][0][0]:02d} {tags["©nam"][0]}') + '.m4a')
+            file_name = self.get_sanizated_string(f'{tags["trkn"][0][0]:02d} {tags["©nam"][0]}', False) + '.m4a'
+        return self.final_path / self.get_sanizated_string(tags['aART'][0], True) / self.get_sanizated_string(tags['\xa9alb'][0], True) / file_name
         
     
     def download(self, encrypted_location, stream_url):
@@ -288,6 +290,13 @@ if __name__ == '__main__':
         metavar = '<url>'
     )
     parser.add_argument(
+        '-u',
+        '--urls-txt',
+        help = 'Read URLs from a text file.',
+        nargs = '?',
+        metavar = '<txt_file>'
+    )
+    parser.add_argument(
         '-f',
         '--final-path',
         default = 'Spotify',
@@ -307,13 +316,6 @@ if __name__ == '__main__':
         default = 'cookies.txt',
         help = 'Cookies location.',
         metavar = '<cookies_location>'
-    )
-    parser.add_argument(
-        '-u',
-        '--urls-txt',
-        help = 'Read URLs from a text file.',
-        nargs = '?',
-        metavar = '<txt_file>'
     )
     parser.add_argument(
         '-p',
