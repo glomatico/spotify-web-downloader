@@ -20,7 +20,7 @@ A Python script to download songs/albums/playlists directly from Spotify in AAC 
 
 ## Usage
 ```
-python gamdl.py [OPTIONS] [URLS]
+python spotiy_aac_downloader.py [OPTIONS] [URLS]
 ```
 Tracks are saved in `./Spotify` by default, but the directory can be changed using `--final-path` argument.
 
