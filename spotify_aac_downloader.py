@@ -263,7 +263,7 @@ class SpotifyAacDownloader:
         ])
     
 
-    def apply_tags(self, fixed_location, final_location, tags):
+    def make_final(self, fixed_location, final_location, tags):
         final_location.parent.mkdir(parents = True, exist_ok = True)
         shutil.copy(fixed_location, final_location)
         file = MP4(final_location).tags
@@ -350,21 +350,21 @@ if __name__ == '__main__':
     )
     download_queue = []
     error_count = 0
-    for i in range(len(args.url)):
+    for i, url in enumerate(args.url):
         try:
-            download_queue.append(dl.get_download_queue(args.url[i]))
+            download_queue.append(dl.get_download_queue(url.strip()))
         except KeyboardInterrupt:
-            exit(0)
+            exit(1)
         except:
             error_count += 1
             print(f'* Failed to check URL {i + 1}.')
             if args.print_exceptions:
                 traceback.print_exc()
-    for i in range(len(download_queue)):
-        for j in range(len(download_queue[i])):
-            print(f'Downloading "{download_queue[i][j]["title"]}" (track {j + 1} from URL {i + 1})...')
+    for i, url in enumerate(download_queue):
+        for j, track in enumerate(download_queue[i]):
+            print(f'Downloading "{track["title"]}" (track {j + 1} from URL {i + 1})...')
             try:
-                metadata = dl.get_metadata(download_queue[i][j]['gid'])
+                metadata = dl.get_metadata(track['gid'])
                 file_id = dl.get_file_id(metadata)
                 stream_url = dl.get_stream_url(file_id)
                 pssh = dl.get_pssh(file_id)
@@ -379,12 +379,12 @@ if __name__ == '__main__':
                 album_id = dl.get_album_id(metadata)
                 tags = dl.get_tags(album_id, metadata)
                 final_location = dl.get_final_location(tags)
-                dl.apply_tags(fixed_location, final_location, tags)
+                dl.make_final(fixed_location, final_location, tags)
             except KeyboardInterrupt:
-                exit(0)
+                exit(1)
             except:
                 error_count += 1
-                print(f'* Failed to download "{download_queue[i][j]["title"]}" (track {j + 1} from URL {i + 1}).')
+                print(f'* Failed to download "{track["title"]}" (track {j + 1} from URL {i + 1}).')
                 if args.print_exceptions:
                     traceback.print_exc()
             dl.cleanup()
