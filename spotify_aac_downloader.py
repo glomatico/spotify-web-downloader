@@ -2,9 +2,8 @@ import requests
 from librespot.metadata import TrackId
 from pathlib import Path
 import re
-from pywidevine.L3.cdm.cdm import Cdm
 import base64
-from pywidevine.L3.decrypt.wvdecryptcustom import WvDecrypt
+from pywidevine.L3.cdm.cdm import Cdm
 from pywidevine.L3.cdm import deviceconfig
 from mutagen.mp4 import MP4, MP4Cover
 from pathlib import Path
