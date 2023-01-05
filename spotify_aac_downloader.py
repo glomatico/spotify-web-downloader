@@ -2,9 +2,10 @@ import requests
 from librespot.metadata import TrackId
 from pathlib import Path
 import re
-from pywidevine.L3.cdm import deviceconfig
+from pywidevine.L3.cdm.cdm import Cdm
 import base64
 from pywidevine.L3.decrypt.wvdecryptcustom import WvDecrypt
+from pywidevine.L3.cdm import deviceconfig
 from mutagen.mp4 import MP4, MP4Cover
 from pathlib import Path
 from yt_dlp import YoutubeDL
@@ -16,6 +17,7 @@ import traceback
 
 class SpotifyAacDownloader:
     def __init__(self, cookies_location, premium_quality, temp_path, final_path, skip_cleanup):
+        self.cdm = Cdm()
         self.temp_path = Path(temp_path)
         self.final_path = Path(final_path)
         self.skip_cleanup = skip_cleanup
@@ -124,17 +126,41 @@ class SpotifyAacDownloader:
         return self.session.get(f'https://seektables.scdn.co/seektable/{file_id}.json').json()['pssh']
     
 
-    def get_wvkeys(self, pssh):
-        wvdecrypt = WvDecrypt(init_data_b64 = pssh, cert_data_b64 = None, device = deviceconfig.device_android_generic)
-        widevine_license = self.session.post(
-            'https://gue1-spclient.spotify.com/widevine-license/v1/audio/license', 
-            wvdecrypt.get_challenge()
+    def fix_pssh(self, pssh_b64):
+        WV_SYSTEM_ID = [237, 239, 139, 169, 121, 214, 74, 206, 163, 200, 39, 220, 213, 29, 33, 237]
+        pssh = base64.b64decode(pssh_b64)
+        if not pssh[12:28] == bytes(WV_SYSTEM_ID):
+            new_pssh = bytearray([0, 0, 0])
+            new_pssh.append(32 + len(pssh))
+            new_pssh[4:] = bytearray(b'pssh')
+            new_pssh[8:] = [0, 0, 0, 0]
+            new_pssh[13:] = WV_SYSTEM_ID
+            new_pssh[29:] = [0, 0, 0, 0]
+            new_pssh[31] = len(pssh)
+            new_pssh[32:] = pssh
+            return base64.b64encode(new_pssh)
+        else:
+            return pssh_b64
+    
+
+    def get_decryption_keys(self, pssh):
+        session = self.cdm.open_session(
+            self.fix_pssh(pssh),
+            deviceconfig.DeviceConfig(deviceconfig.device_android_generic)
         )
-        license_b64 = base64.b64encode(widevine_license.content)
-        wvdecrypt.update_license(license_b64)
-        wvkeys = wvdecrypt.start_process()
-        wvkeys = wvkeys[0]
-        return wvkeys
+        challenge = self.cdm.get_license_request(session)
+        license_b64 = base64.b64encode(
+            self.session.post(
+                'https://gue1-spclient.spotify.com/widevine-license/v1/audio/license', 
+                challenge
+            ).content
+        )
+        self.cdm.provide_license(session, license_b64)
+        decryption_keys = []
+        for key in self.cdm.get_keys(session):
+            if key.type == 'CONTENT':
+                decryption_keys.append(f'{key.kid.hex()}:{key.key.hex()}')
+        return decryption_keys[0]
     
     
     def get_stream_url(self, file_id):
@@ -362,12 +388,12 @@ if __name__ == '__main__':
                 file_id = dl.get_file_id(metadata)
                 stream_url = dl.get_stream_url(file_id)
                 pssh = dl.get_pssh(file_id)
-                wvkeys = dl.get_wvkeys(pssh)
+                decryption_keys = dl.get_decryption_keys(pssh)
                 track_id = dl.get_track_id(metadata)
                 encrypted_location = dl.get_encrypted_location(track_id)
                 dl.download(encrypted_location, stream_url)
                 decrypted_location = dl.get_decrypted_location(track_id)
-                dl.decrypt(wvkeys, encrypted_location, decrypted_location)
+                dl.decrypt(decryption_keys, encrypted_location, decrypted_location)
                 fixed_location = dl.get_fixed_location(track_id)
                 dl.fixup(decrypted_location, fixed_location)
                 album_id = dl.get_album_id(metadata)
