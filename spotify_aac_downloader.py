@@ -1,10 +1,10 @@
-import requests
-from librespot.metadata import TrackId
 from pathlib import Path
 import re
 import base64
 from pywidevine.L3.cdm.cdm import Cdm
 from pywidevine.L3.cdm import deviceconfig
+import requests
+from librespot.metadata import TrackId
 from mutagen.mp4 import MP4, MP4Cover
 from pathlib import Path
 from yt_dlp import YoutubeDL
@@ -125,7 +125,7 @@ class SpotifyAacDownloader:
         return self.session.get(f'https://seektables.scdn.co/seektable/{file_id}.json').json()['pssh']
     
 
-    def fix_pssh(self, pssh_b64):
+    def check_pssh(self, pssh_b64):
         WV_SYSTEM_ID = [237, 239, 139, 169, 121, 214, 74, 206, 163, 200, 39, 220, 213, 29, 33, 237]
         pssh = base64.b64decode(pssh_b64)
         if not pssh[12:28] == bytes(WV_SYSTEM_ID):
@@ -144,7 +144,7 @@ class SpotifyAacDownloader:
 
     def get_decryption_keys(self, pssh):
         session = self.cdm.open_session(
-            self.fix_pssh(pssh),
+            self.check_pssh(pssh),
             deviceconfig.DeviceConfig(deviceconfig.device_android_generic)
         )
         challenge = self.cdm.get_license_request(session)
