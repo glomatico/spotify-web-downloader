@@ -10,7 +10,7 @@ from pathlib import Path
 from yt_dlp import YoutubeDL
 import subprocess
 import shutil
-from argparse import ArgumentParser
+import argparse
 import traceback
 
 
@@ -99,14 +99,13 @@ class SpotifyAacDownloader:
                             'title': track['track']['name']
                     })
                     next_page = response['next']
+        if not download_queue:
+            raise Exception()
         return download_queue
     
 
     def get_metadata(self, gid):
-        response = self.session.get(
-            f'https://spclient.wg.spotify.com/metadata/4/track/{gid}?market=from_token',
-        ).json()
-        return response
+        return self.session.get(f'https://spclient.wg.spotify.com/metadata/4/track/{gid}?market=from_token').json()
     
 
     def get_album_id(self, metadata):
@@ -122,10 +121,7 @@ class SpotifyAacDownloader:
     
 
     def get_pssh(self, file_id):
-        response = self.session.get(
-            f'https://seektables.scdn.co/seektable/{file_id}.json',
-        ).json()
-        return response['pssh']
+        return self.session.get(f'https://seektables.scdn.co/seektable/{file_id}.json').json()['pssh']
     
 
     def get_wvkeys(self, pssh):
@@ -196,8 +192,7 @@ class SpotifyAacDownloader:
     
 
     def get_sanizated_string(self, dirty_string, is_folder):
-        illegal_characters = ['\\', '/', ':', '*', '?', '"', '<', '>', '|', ';']
-        for character in illegal_characters:
+        for character in ['\\', '/', ':', '*', '?', '"', '<', '>', '|', ';']:
             dirty_string = dirty_string.replace(character, '_')
         if is_folder:
             dirty_string = dirty_string[:40]
@@ -282,7 +277,10 @@ if __name__ == '__main__':
         raise Exception('mp4decrypt is not on PATH')
     if not shutil.which('MP4Box'):
         raise Exception('MP4Box is not on PATH')
-    parser = ArgumentParser(description = 'A Python script to download Spotify songs/albums/playlists.')
+    parser = argparse.ArgumentParser(
+        description = 'A Python script to download Spotify songs/albums/playlists.',
+        formatter_class = argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument(
         'url',
         help='Spotify song/album/playlist URL(s)',
@@ -293,29 +291,25 @@ if __name__ == '__main__':
         '-u',
         '--urls-txt',
         help = 'Read URLs from a text file.',
-        nargs = '?',
-        metavar = '<txt_file>'
+        nargs = '?'
     )
     parser.add_argument(
         '-f',
         '--final-path',
         default = 'Spotify',
-        help = 'Final Path.',
-        metavar = '<final_path>'
+        help = 'Final Path.'
     )
     parser.add_argument(
         '-t',
         '--temp-path',
         default = 'temp',
-        help = 'Temp Path.',
-        metavar = '<temp_path>'
+        help = 'Temp Path.'
     )
     parser.add_argument(
         '-c',
         '--cookies-location',
         default = 'cookies.txt',
-        help = 'Cookies location.',
-        metavar = '<cookies_location>'
+        help = 'Cookies location.'
     )
     parser.add_argument(
         '-p',
@@ -333,7 +327,7 @@ if __name__ == '__main__':
         '-e',
         '--print-exceptions',
         action = 'store_true',
-        help = 'Print Execeptions.'
+        help = 'Print Execeptions while downloading.'
     )
     args = parser.parse_args()
     if not args.url and not args.urls_txt:
@@ -361,7 +355,7 @@ if __name__ == '__main__':
             if args.print_exceptions:
                 traceback.print_exc()
     for i, url in enumerate(download_queue):
-        for j, track in enumerate(download_queue[i]):
+        for j, track in enumerate(url):
             print(f'Downloading "{track["title"]}" (track {j + 1} from URL {i + 1})...')
             try:
                 metadata = dl.get_metadata(track['gid'])
