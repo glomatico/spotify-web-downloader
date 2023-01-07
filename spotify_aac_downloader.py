@@ -1,25 +1,27 @@
 from pathlib import Path
 import re
 import base64
+import datetime
+import subprocess
+import shutil
+import argparse
+import traceback
+from pathlib import Path
 from pywidevine.L3.cdm.cdm import Cdm
 from pywidevine.L3.cdm import deviceconfig
 import requests
 from librespot.metadata import TrackId
 from mutagen.mp4 import MP4, MP4Cover
-from pathlib import Path
 from yt_dlp import YoutubeDL
-import subprocess
-import shutil
-import argparse
-import traceback
 
 
 class SpotifyAacDownloader:
-    def __init__(self, cookies_location, premium_quality, temp_path, final_path, skip_cleanup):
+    def __init__(self, cookies_location, premium_quality, temp_path, final_path, skip_cleanup, no_lrc):
         self.cdm = Cdm()
         self.temp_path = Path(temp_path)
         self.final_path = Path(final_path)
         self.skip_cleanup = skip_cleanup
+        self.no_lrc = no_lrc
         if premium_quality:
             self.audio_quality = 'MP4_256'
         else:
@@ -32,6 +34,7 @@ class SpotifyAacDownloader:
                     cookies[line_fields[5]] = line_fields[6]
         self.session = requests.Session()
         self.session.headers.update({
+            'app-platform': 'WebPlayer',
             'accept': 'application/json',
             'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,zh-CN;q=0.6,zh;q=0.5,ru;q=0.4,es;q=0.3,ja;q=0.2',
             'content-type': 'application/json',
@@ -43,13 +46,13 @@ class SpotifyAacDownloader:
             'sec-fetch-dest': 'empty',
             'sec-fetch-mode': 'cors',
             'sec-fetch-site': 'same-site',
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
         })
         self.session.cookies.update(cookies)
         web_page = self.session.get('https://open.spotify.com/').text
         token = re.search(r'accessToken":"(.*?)"', web_page).group(1)
         self.session.headers.update({
-            'authorization': f'Bearer {token}',
+            'authorization': f'Bearer {token}'
         })
 
 
@@ -174,27 +177,46 @@ class SpotifyAacDownloader:
         artist = ', '.join([artist['name'] for artist in spotify_artist][:-1])
         artist += f' & {spotify_artist[-1]["name"]}'
         return artist
+    
+
+    def get_synced_lyrics_formated_time(self, time):
+        formated_time = datetime.datetime.fromtimestamp(time / 1000.0)
+        return formated_time.strftime('%M:%S.%f')[:-4]
+
+    
+    def get_lyrics(self, track_id):
+        try:
+            raw_lyrics = self.session.get(f'https://spclient.wg.spotify.com/color-lyrics/v2/track/{track_id}').json()['lyrics']
+        except:
+            return None
+        synced_lyrics = ''
+        unsynced_lyrics = ''
+        for line in raw_lyrics['lines']:
+            if raw_lyrics['syncType'] == 'LINE_SYNCED':
+                synced_lyrics += f'[{self.get_synced_lyrics_formated_time(int(line["startTimeMs"]))}]{line["words"]}\n'
+            unsynced_lyrics += f'{line["words"]}\n'
+        return unsynced_lyrics[:-1], synced_lyrics
 
 
-    def get_tags(self, album_id, metadata):
-        response = self.session.get(f'https://api.spotify.com/v1/albums/{album_id}').json()
-        copyright = [response['text'] for response in response['copyrights'] if response['type'] == 'P']
-        if response['release_date_precision'] == 'year':
-            release_date = response['release_date'] + '-01-01'
+    def get_tags(self, album_id, lyrics, metadata):
+        extra_tags = self.session.get(f'https://api.spotify.com/v1/albums/{album_id}').json()
+        copyright = [extra_tags['text'] for extra_tags in extra_tags['copyrights'] if extra_tags['type'] == 'P']
+        if extra_tags['release_date_precision'] == 'year':
+            release_date = extra_tags['release_date'] + '-01-01'
         else:
-            release_date = response['release_date']
-        if response['tracks']['next'] is None:
-            total_tracks = [response['track_number'] for response in response['tracks']['items'] if response['disc_number'] == metadata['disc_number']][-1]
-            total_discs = response['tracks']['items'][-1]['disc_number']
+            release_date = extra_tags['release_date']
+        if extra_tags['tracks']['next'] is None:
+            total_tracks = [extra_tags['track_number'] for extra_tags in extra_tags['tracks']['items'] if extra_tags['disc_number'] == metadata['disc_number']][-1]
+            total_discs = extra_tags['tracks']['items'][-1]['disc_number']
         else:
-            next_page = response['tracks']['next']
+            next_page = extra_tags['tracks']['next']
             while True:
                 if next_page is None:
                     break
-                response = self.session.get(next_page).json()
-                total_tracks = [response['track_number'] for response in response['items'] if response['disc_number'] == metadata['disc_number']][-1]
-                total_discs = response['items'][-1]['disc_number']
-                next_page = response['next']
+                extra_tags = self.session.get(next_page).json()
+                total_tracks = [extra_tags['track_number'] for extra_tags in extra_tags['items'] if extra_tags['disc_number'] == metadata['disc_number']][-1]
+                total_discs = extra_tags['items'][-1]['disc_number']
+                next_page = extra_tags['next']
         tags = {
             '\xa9nam': [metadata['name']],
             '\xa9ART': [self.get_artist(metadata['artist'])],
@@ -213,6 +235,8 @@ class SpotifyAacDownloader:
             'cprt': copyright,
             'rtng': [0] if metadata.get('explicit') is None else [1]
         }
+        if lyrics is not None:
+            tags['\xa9lyr'] = [lyrics[0]]
         return tags
     
 
@@ -290,6 +314,12 @@ class SpotifyAacDownloader:
         for key, value in tags.items():
             file[key] = value
         file.save(final_location)
+
+
+    def make_lrc(self, final_location, lyrics):
+        if lyrics is not None and lyrics[1] and not self.no_lrc:
+            with open(final_location.with_suffix('.lrc'), 'w', encoding = 'utf8') as f:
+                f.write(lyrics[1])
     
 
     def cleanup(self):
@@ -303,7 +333,7 @@ if __name__ == '__main__':
     if not shutil.which('MP4Box'):
         raise Exception('MP4Box is not on PATH')
     parser = argparse.ArgumentParser(
-        description = 'A Python script to download Spotify songs/albums/playlists.',
+        description = 'A Python script to download Spotify AAC songs/albums/playlists.',
         formatter_class = argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
@@ -337,6 +367,12 @@ if __name__ == '__main__':
         help = 'Cookies location.'
     )
     parser.add_argument(
+        '-n',
+        '--no-lrc',
+        action = 'store_true',
+        help = "Don't create .lrc file."
+    )
+    parser.add_argument(
         '-p',
         '--premium-quality',
         action = 'store_true',
@@ -365,7 +401,8 @@ if __name__ == '__main__':
         args.premium_quality,
         args.temp_path,
         args.final_path,
-        args.skip_cleanup
+        args.skip_cleanup,
+        args.no_lrc
     )
     download_queue = []
     error_count = 0
@@ -396,9 +433,11 @@ if __name__ == '__main__':
                 fixed_location = dl.get_fixed_location(track_id)
                 dl.fixup(decrypted_location, fixed_location)
                 album_id = dl.get_album_id(metadata)
-                tags = dl.get_tags(album_id, metadata)
+                lyrics = dl.get_lyrics(track_id)
+                tags = dl.get_tags(album_id, lyrics, metadata)
                 final_location = dl.get_final_location(tags)
                 dl.make_final(fixed_location, final_location, tags)
+                dl.make_lrc(final_location, lyrics)
             except KeyboardInterrupt:
                 exit(1)
             except:
