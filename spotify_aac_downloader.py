@@ -12,8 +12,10 @@ from pywidevine.L3.cdm.cdm import Cdm
 from pywidevine.L3.cdm import deviceconfig
 import requests
 from librespot.metadata import TrackId
+from librespot.metadata import AlbumId
 from mutagen.mp4 import MP4, MP4Cover
 from yt_dlp import YoutubeDL
+
 
 class SpotifyAacDownloader:
     def __init__(self, cookies_location, premium_quality, temp_path, final_path, skip_cleanup, no_lrc):
@@ -54,75 +56,65 @@ class SpotifyAacDownloader:
         self.session.headers.update({
             'authorization': f'Bearer {token}'
         })
-    
-
-    @functools.lru_cache()
-    def get_album(self, album_id):
-        album = self.session.get(f'https://api.spotify.com/v1/albums/{album_id}').json()
-        if album['tracks']['next'] is not None:
-            album_next_url = album['tracks']['next']
-            while True:
-                if album_next_url is None:
-                    break
-                album_next = self.session.get(album_next_url).json()
-                album['tracks']['items'].extend(album_next['items'])
-                album_next_url = album_next['next']
-        return album
 
 
     def get_download_queue(self, url):
         spotify_id = url.split('/')[-1].split('?')[0]
         download_queue = []
         if 'track' in url:
-            track = self.session.get(f'https://api.spotify.com/v1/tracks/{spotify_id}').json()
-            download_queue.append({
-                'album_id': track['album']['id'],
-                'gid': TrackId.from_uri(track['uri']).get_gid().hex(),
-                'title': track['name']
-            })
+            download_queue.append(
+                self.get_metadata(TrackId.from_base62(spotify_id).get_gid().hex())
+            )
         elif 'album' in url:
             for track in self.get_album(spotify_id)['tracks']['items']:
-                download_queue.append({
-                    'album_id': spotify_id,
-                    'gid': TrackId.from_uri(track['uri']).get_gid().hex(),
-                    'title': track['name']
-                })
+                download_queue.append(
+                    self.get_metadata(TrackId.from_uri(track['uri']).get_gid().hex())
+                )
         elif 'playlist' in url:
-            playlist = self.session.get(f'https://api.spotify.com/v1/playlists/{spotify_id}').json()
-            for track in playlist['tracks']['items']:
-                download_queue.append({
-                    'album_id': track['track']['album']['id'],
-                    'gid': TrackId.from_uri(track['track']['uri']).get_gid().hex(),
-                    'title': track['track']['name']
-                })
-            if playlist['tracks']['next'] is not None:
-                playlist_next_url = playlist['tracks']['next']
-                while True:
-                    if playlist_next_url is None:
-                        break
-                    playlist_next = self.session.get(playlist_next_url).json()
-                    for track in playlist_next['items']:
-                        download_queue.append({
-                            'album_id': track['track']['album']['id'],
-                            'gid': TrackId.from_uri(track['track']['uri']).get_gid().hex(),
-                            'title': track['track']['name']
-                        })
-                    playlist_next_url = playlist_next['next']
+            for track in self.get_playlist(spotify_id)['tracks']['items']:
+                download_queue.append(
+                    self.get_metadata(TrackId.from_uri(track['track']['uri']).get_gid().hex())
+                )
         if not download_queue:
-            raise Exception()
+            raise Exception('Not a valid Spotify URL')
         return download_queue
+    
+
+    @functools.lru_cache()
+    def get_album(self, album_id):
+        album = self.session.get(f'https://api.spotify.com/v1/albums/{album_id}').json()
+        album_next_url = album['tracks']['next']
+        while True:
+            if album_next_url is None:
+                break
+            album_next = self.session.get(album_next_url).json()
+            album['tracks']['items'].extend(album_next['items'])
+            album_next_url = album_next['next']
+        return album
+    
+
+    def get_playlist(self, playlist_id):
+        playlist = self.session.get(f'https://api.spotify.com/v1/playlists/{playlist_id}').json()
+        playlist_next_url = playlist['tracks']['next']
+        while True:
+            if playlist_next_url is None:
+                break
+            playlist_next = self.session.get(playlist_next_url).json()
+            playlist['tracks']['items'].extend(playlist_next['items'])
+            playlist_next_url = playlist_next['next']
+        return playlist
     
 
     def get_metadata(self, gid):
         return self.session.get(f'https://spclient.wg.spotify.com/metadata/4/track/{gid}?market=from_token').json()
     
 
-    def get_track_id(self, metadata):
-        return metadata['canonical_uri'].split(':')[-1]
+    def get_track_id(self, track):
+        return track['canonical_uri'].split(':')[-1]
 
 
-    def get_file_id(self, metadata):
-        return next(metadata["file_id"] for metadata in metadata["file"] if metadata["format"] == self.audio_quality)
+    def get_file_id(self, track):
+        return next(i["file_id"] for i in track["file"] if i["format"] == self.audio_quality)
     
 
     def get_pssh(self, file_id):
@@ -172,11 +164,11 @@ class SpotifyAacDownloader:
         ).json()['cdnurl'][0]
     
 
-    def get_artist(self, spotify_artist):
-        if len(spotify_artist) == 1:
-            return spotify_artist[0]['name']
-        artist = ', '.join([artist['name'] for artist in spotify_artist][:-1])
-        artist += f' & {spotify_artist[-1]["name"]}'
+    def get_artist(self, artist_list):
+        if len(artist_list) == 1:
+            return artist_list[0]['name']
+        artist = ', '.join(i['name'] for i in artist_list[:-1])
+        artist += f' & {artist_list[-1]["name"]}'
         return artist
     
 
@@ -189,7 +181,7 @@ class SpotifyAacDownloader:
         try:
             raw_lyrics = self.session.get(f'https://spclient.wg.spotify.com/color-lyrics/v2/track/{track_id}').json()['lyrics']
         except:
-            return None
+            return None, None
         synced_lyrics = ''
         unsynced_lyrics = ''
         for line in raw_lyrics['lines']:
@@ -204,35 +196,35 @@ class SpotifyAacDownloader:
         return requests.get(url).content
     
 
-    def get_tags(self, album_id, lyrics, metadata):
-        album = self.get_album(album_id)
+    def get_tags(self, track, unsynced_lyrics):
+        album = self.get_album(AlbumId.from_hex(track['album']['gid']).to_spotify_uri().split(':')[-1])
         copyright = next(i['text'] for i in album['copyrights'] if i['type'] == 'P')
         if album['release_date_precision'] == 'year':
             release_date = album['release_date'] + '-01-01'
         else:
             release_date = album['release_date']
-        total_tracks = [i['track_number'] for i in album['tracks']['items'] if i['disc_number'] == metadata['disc_number']][-1]
+        total_tracks = [i['track_number'] for i in album['tracks']['items'] if i['disc_number'] == track['disc_number']][-1]
         total_discs = album['tracks']['items'][-1]['disc_number']
         tags = {
-            '\xa9nam': [metadata['name']],
-            '\xa9ART': [self.get_artist(metadata['artist'])],
-            'aART': [self.get_artist(metadata['album']['artist'])],
-            '\xa9alb': [metadata['album']['name']],
-            'trkn': [(metadata['number'], total_tracks)],
-            'disk': [(metadata['disc_number'], total_discs)],
+            '\xa9nam': [track['name']],
+            '\xa9ART': [self.get_artist(track['artist'])],
+            'aART': [self.get_artist(track['album']['artist'])],
+            '\xa9alb': [track['album']['name']],
+            'trkn': [(track['number'], total_tracks)],
+            'disk': [(track['disc_number'], total_discs)],
             '\xa9day': [f'{release_date}T00:00:00Z'],
             'covr': [
                 MP4Cover(
-                    self.get_cover('https://i.scdn.co/image/' + next(i['file_id'] for i in metadata['album']['cover_group']['image'] if i['size'] == 'LARGE')),
+                    self.get_cover('https://i.scdn.co/image/' + next(i['file_id'] for i in track['album']['cover_group']['image'] if i['size'] == 'LARGE')),
                     imageformat = MP4Cover.FORMAT_JPEG
                 )
             ],
-            '\xa9cmt': [f'https://open.spotify.com/track/{metadata["canonical_uri"].split(":")[-1]}'],
+            '\xa9cmt': [f'https://open.spotify.com/track/{track["canonical_uri"].split(":")[-1]}'],
             'cprt': [copyright],
-            'rtng': [1] if 'explicit' in metadata else [0],
+            'rtng': [1] if 'explicit' in track else [0],
         }
-        if lyrics is not None:
-            tags['\xa9lyr'] = [lyrics[0]]
+        if unsynced_lyrics is not None:
+            tags['\xa9lyr'] = [unsynced_lyrics]
         return tags
     
 
@@ -312,10 +304,10 @@ class SpotifyAacDownloader:
         file.save(final_location)
 
 
-    def make_lrc(self, final_location, lyrics):
-        if lyrics is not None and lyrics[1] and not self.no_lrc:
+    def make_lrc(self, final_location, synced_lyrics):
+        if synced_lyrics and not self.no_lrc:
             with open(final_location.with_suffix('.lrc'), 'w', encoding = 'utf8') as f:
-                f.write(lyrics[1])
+                f.write(synced_lyrics)
     
 
     def cleanup(self):
@@ -414,30 +406,29 @@ if __name__ == '__main__':
                 traceback.print_exc()
     for i, url in enumerate(download_queue):
         for j, track in enumerate(url):
-            print(f'Downloading "{track["title"]}" (track {j + 1} from URL {i + 1})...')
+            print(f'Downloading "{track["name"]}" (track {j + 1} from URL {i + 1})...')
             try:
-                metadata = dl.get_metadata(track['gid'])
-                file_id = dl.get_file_id(metadata)
+                file_id = dl.get_file_id(track)
                 pssh = dl.get_pssh(file_id)
                 decryption_keys = dl.get_decryption_keys(pssh)
                 stream_url = dl.get_stream_url(file_id)
-                track_id = dl.get_track_id(metadata)
+                track_id = dl.get_track_id(track)
                 encrypted_location = dl.get_encrypted_location(track_id)
                 dl.download(encrypted_location, stream_url)
                 decrypted_location = dl.get_decrypted_location(track_id)
                 dl.decrypt(decryption_keys, encrypted_location, decrypted_location)
                 fixed_location = dl.get_fixed_location(track_id)
                 dl.fixup(decrypted_location, fixed_location)
-                lyrics = dl.get_lyrics(track_id)
-                tags = dl.get_tags(track['album_id'], lyrics, metadata)
+                unsynced_lyrics, synced_lyrics = dl.get_lyrics(track_id)
+                tags = dl.get_tags(track, unsynced_lyrics)
                 final_location = dl.get_final_location(tags)
                 dl.make_final(fixed_location, final_location, tags)
-                dl.make_lrc(final_location, lyrics)
+                dl.make_lrc(final_location, synced_lyrics)
             except KeyboardInterrupt:
                 exit(1)
             except:
                 error_count += 1
-                print(f'* Failed to download "{track["title"]}" (track {j + 1} from URL {i + 1}).')
+                print(f'* Failed to download "{track["name"]}" (track {j + 1} from URL {i + 1}).')
                 if args.print_exceptions:
                     traceback.print_exc()
             dl.cleanup()
