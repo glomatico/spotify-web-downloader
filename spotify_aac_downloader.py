@@ -197,7 +197,12 @@ class SpotifyAacDownloader:
                 synced_lyrics += f'[{self.get_synced_lyrics_formated_time(int(line["startTimeMs"]))}]{line["words"]}\n'
             unsynced_lyrics += f'{line["words"]}\n'
         return unsynced_lyrics[:-1], synced_lyrics
+    
 
+    @functools.lru_cache()
+    def get_cover(self, url):
+        return requests.get(url).content
+    
 
     def get_tags(self, album_id, lyrics, metadata):
         album = self.get_album(album_id)
@@ -218,7 +223,7 @@ class SpotifyAacDownloader:
             '\xa9day': [f'{release_date}T00:00:00Z'],
             'covr': [
                 MP4Cover(
-                    self.session.get('https://i.scdn.co/image/' + next(i['file_id'] for i in metadata['album']['cover_group']['image'] if i['size'] == 'LARGE')).content,
+                    self.get_cover('https://i.scdn.co/image/' + next(i['file_id'] for i in metadata['album']['cover_group']['image'] if i['size'] == 'LARGE')),
                     imageformat = MP4Cover.FORMAT_JPEG
                 )
             ],
