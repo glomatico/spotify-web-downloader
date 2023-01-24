@@ -273,26 +273,32 @@ class SpotifyAacDownloader:
     
 
     def decrypt(self, keys, encrypted_location, decrypted_location):
-        subprocess.check_output([
-            'mp4decrypt',
-            encrypted_location,
-            '--key',
-            keys,
-            decrypted_location
-        ])
+        subprocess.run(
+            [
+                'mp4decrypt',
+                encrypted_location,
+                '--key',
+                keys,
+                decrypted_location
+            ],
+            check = True
+        )
     
 
     def fixup(self, decrypted_location, fixed_location):
-        subprocess.check_output([
-            'MP4Box',
-            '-add',
-            decrypted_location,
-            '-itags',
-            'album=placeholder',
-            '-new',
-            '-quiet',
-            fixed_location
-        ])
+        subprocess.run(
+            [
+                'MP4Box',
+                '-add',
+                decrypted_location,
+                '-itags',
+                'album=placeholder',
+                '-new',
+                '-quiet',
+                fixed_location
+            ],
+            check = True
+        )
     
 
     def make_final(self, fixed_location, final_location, tags):
@@ -376,7 +382,7 @@ if __name__ == '__main__':
         '-e',
         '--print-exceptions',
         action = 'store_true',
-        help = 'Print Execeptions while downloading.'
+        help = 'Print execeptions.'
     )
     args = parser.parse_args()
     if not args.url and not args.urls_txt:
