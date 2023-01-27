@@ -1,4 +1,3 @@
-from pathlib import Path
 import re
 import base64
 import datetime
@@ -327,7 +326,7 @@ if __name__ == '__main__':
     if not shutil.which('MP4Box'):
         raise Exception('MP4Box is not on PATH')
     parser = argparse.ArgumentParser(
-        description = 'A Python script to download Spotify AAC songs/albums/playlists.',
+        description = 'A Python script to download songs/albums/playlists directly from Spotify in 256kbps/128kbps AAC.',
         formatter_class = argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
