@@ -3,7 +3,7 @@ import argparse
 import traceback
 from .spotify_aac_downloader import SpotifyAacDownloader
 
-__version__ = '1.0'
+__version__ = '1.1'
 
 
 def main():
@@ -118,13 +118,15 @@ def main():
         for j, track in enumerate(url):
             print(f'Downloading "{track["name"]}" (track {j + 1}/{len(url)} from URL {i + 1}/{len(download_queue)})')
             try:
-                track_id = dl.get_track_id(track)
+                track_id = track['id']
+                gid = dl.uri_to_gid(track_id)
+                metadata = dl.get_metadata(gid)
                 unsynced_lyrics, synced_lyrics = dl.get_lyrics(track_id)
-                tags = dl.get_tags(track, unsynced_lyrics)
+                tags = dl.get_tags(metadata, unsynced_lyrics)
                 final_location = dl.get_final_location(tags)
                 if not args.overwrite and final_location.exists():
                     continue
-                file_id = dl.get_file_id(track)
+                file_id = dl.get_file_id(metadata)
                 pssh = dl.get_pssh(file_id)
                 decryption_keys = dl.get_decryption_keys(pssh)
                 stream_url = dl.get_stream_url(file_id)

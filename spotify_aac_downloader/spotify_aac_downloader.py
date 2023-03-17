@@ -59,30 +59,26 @@ class SpotifyAacDownloader:
         uri = url.split('/')[-1].split('?')[0]
         download_queue = []
         if 'track' in url:
-            download_queue.append(
-                self.get_metadata(self.uri_to_gid(uri))
-            )
+            download_queue.append(self.get_track(uri))
         elif 'album' in url:
-            for track in self.get_album(uri)['tracks']['items']:
-                download_queue.append(
-                    self.get_metadata(self.uri_to_gid(track['uri']))
-                )
+            download_queue.extend(self.get_album(uri)['tracks']['items'])
         elif 'playlist' in url:
-            for track in self.get_playlist(uri)['tracks']['items']:
-                download_queue.append(
-                    self.get_metadata(self.uri_to_gid(track['track']['uri']))
-                )
+            download_queue.extend([i['track'] for i in self.get_playlist(uri)['tracks']['items']])
         if not download_queue:
             raise Exception('Not a valid Spotify URL')
         return download_queue
 
 
     def uri_to_gid(self, uri):
-        return hex(base62.decode(uri, base62.CHARSET_INVERTED))[2:]
+        return hex(base62.decode(uri, base62.CHARSET_INVERTED))[2:].zfill(32)
     
 
     def gid_to_uri(self, gid):
-        return base62.encode(int(gid, 16), charset = base62.CHARSET_INVERTED)
+        return base62.encode(int(gid, 16), charset = base62.CHARSET_INVERTED).zfill(22)
+    
+
+    def get_track(self, track_id):
+        return self.session.get(f'https://api.spotify.com/v1/tracks/{track_id}').json()
     
 
     @functools.lru_cache()
@@ -108,10 +104,6 @@ class SpotifyAacDownloader:
 
     def get_metadata(self, gid):
         return self.session.get(f'https://spclient.wg.spotify.com/metadata/4/track/{gid}?market=from_token').json()
-    
-
-    def get_track_id(self, track):
-        return track['canonical_uri'].split(':')[-1]
 
 
     def get_file_id(self, track):
@@ -125,11 +117,11 @@ class SpotifyAacDownloader:
     def get_decryption_keys(self, pssh):
         pssh = PSSH(pssh)
         challenge = self.cdm.get_license_challenge(self.cdm_session, pssh)
-        license_b64 = self.session.post(
+        license = self.session.post(
             'https://gue1-spclient.spotify.com/widevine-license/v1/audio/license', 
             challenge
         ).content
-        self.cdm.parse_license(self.cdm_session, license_b64)
+        self.cdm.parse_license(self.cdm_session, license)
         return f'1:{next(i for i in self.cdm.get_keys(self.cdm_session) if i.type == "CONTENT").key.hex()}'
     
     
