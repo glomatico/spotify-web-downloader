@@ -1,8 +1,7 @@
 /*
-__pycache__/
-!spotify_aac_downloader.py
-!pywidevine
-!requirements.txt
+__pycache__
+!spotify_aac_downloader
 !.gitignore
-device_client_id_blob
-device_private_key
+!pyproject.toml
+!README.md
+!requirements.txt

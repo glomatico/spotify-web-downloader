@@ -1,38 +1,36 @@
+from pathlib import Path
+import glob
+from http.cookiejar import MozillaCookieJar
 import re
-import base64
+import requests
+import functools
 import datetime
 import subprocess
 import shutil
-import argparse
-import traceback
-from pathlib import Path
-import functools
-from pywidevine.L3.cdm.cdm import Cdm
-from pywidevine.L3.cdm import deviceconfig
-import requests
-from librespot.metadata import TrackId
-from librespot.metadata import AlbumId
+from pywidevine import Cdm, Device, PSSH
+import base62
 from mutagen.mp4 import MP4, MP4Cover
 from yt_dlp import YoutubeDL
 
 
 class SpotifyAacDownloader:
-    def __init__(self, cookies_location, premium_quality, temp_path, final_path, skip_cleanup, no_lrc):
-        self.cdm = Cdm()
+    def __init__(self, final_path, cookies_location, temp_path, wvd_location, premium_quality, overwrite, skip_cleanup, no_lrc):
         self.temp_path = Path(temp_path)
         self.final_path = Path(final_path)
         self.skip_cleanup = skip_cleanup
         self.no_lrc = no_lrc
+        self.overwrite = overwrite
         if premium_quality:
             self.audio_quality = 'MP4_256'
         else:
             self.audio_quality = 'MP4_128'
-        cookies = {}
-        with open(Path(cookies_location), 'r') as f:
-            for l in f:
-                if not re.match(r"^#", l) and not re.match(r"^\n", l):
-                    line_fields = l.strip().replace('&quot;', '"').split('\t')
-                    cookies[line_fields[5]] = line_fields[6]
+        wvd_location = glob.glob(wvd_location)
+        if not wvd_location:
+            raise Exception('.wvd file not found')
+        self.cdm = Cdm.from_device(Device.load(Path(wvd_location[0])))
+        self.cdm_session = self.cdm.open()
+        cookies = MozillaCookieJar(Path(cookies_location))
+        cookies.load(ignore_discard = True, ignore_expires = True)
         self.session = requests.Session()
         self.session.headers.update({
             'app-platform': 'WebPlayer',
@@ -55,37 +53,43 @@ class SpotifyAacDownloader:
         self.session.headers.update({
             'authorization': f'Bearer {token}'
         })
-
+    
 
     def get_download_queue(self, url):
-        spotify_id = url.split('/')[-1].split('?')[0]
+        uri = url.split('/')[-1].split('?')[0]
         download_queue = []
         if 'track' in url:
             download_queue.append(
-                self.get_metadata(TrackId.from_base62(spotify_id).get_gid().hex())
+                self.get_metadata(self.uri_to_gid(uri))
             )
         elif 'album' in url:
-            for track in self.get_album(spotify_id)['tracks']['items']:
+            for track in self.get_album(uri)['tracks']['items']:
                 download_queue.append(
-                    self.get_metadata(TrackId.from_uri(track['uri']).get_gid().hex())
+                    self.get_metadata(self.uri_to_gid(track['uri']))
                 )
         elif 'playlist' in url:
-            for track in self.get_playlist(spotify_id)['tracks']['items']:
+            for track in self.get_playlist(uri)['tracks']['items']:
                 download_queue.append(
-                    self.get_metadata(TrackId.from_uri(track['track']['uri']).get_gid().hex())
+                    self.get_metadata(self.uri_to_gid(track['track']['uri']))
                 )
         if not download_queue:
             raise Exception('Not a valid Spotify URL')
         return download_queue
+
+
+    def uri_to_gid(self, uri):
+        return hex(base62.decode(uri, base62.CHARSET_INVERTED))[2:]
+    
+
+    def gid_to_uri(self, gid):
+        return base62.encode(int(gid, 16), charset = base62.CHARSET_INVERTED)
     
 
     @functools.lru_cache()
     def get_album(self, album_id):
         album = self.session.get(f'https://api.spotify.com/v1/albums/{album_id}').json()
         album_next_url = album['tracks']['next']
-        while True:
-            if album_next_url is None:
-                break
+        while album_next_url is not None:
             album_next = self.session.get(album_next_url).json()
             album['tracks']['items'].extend(album_next['items'])
             album_next_url = album_next['next']
@@ -95,9 +99,7 @@ class SpotifyAacDownloader:
     def get_playlist(self, playlist_id):
         playlist = self.session.get(f'https://api.spotify.com/v1/playlists/{playlist_id}').json()
         playlist_next_url = playlist['tracks']['next']
-        while True:
-            if playlist_next_url is None:
-                break
+        while playlist_next_url is not None:
             playlist_next = self.session.get(playlist_next_url).json()
             playlist['tracks']['items'].extend(playlist_next['items'])
             playlist_next_url = playlist_next['next']
@@ -120,41 +122,15 @@ class SpotifyAacDownloader:
         return self.session.get(f'https://seektables.scdn.co/seektable/{file_id}.json').json()['pssh']
     
 
-    def check_pssh(self, pssh_b64):
-        WV_SYSTEM_ID = [237, 239, 139, 169, 121, 214, 74, 206, 163, 200, 39, 220, 213, 29, 33, 237]
-        pssh = base64.b64decode(pssh_b64)
-        if not pssh[12:28] == bytes(WV_SYSTEM_ID):
-            new_pssh = bytearray([0, 0, 0])
-            new_pssh.append(32 + len(pssh))
-            new_pssh[4:] = bytearray(b'pssh')
-            new_pssh[8:] = [0, 0, 0, 0]
-            new_pssh[13:] = WV_SYSTEM_ID
-            new_pssh[29:] = [0, 0, 0, 0]
-            new_pssh[31] = len(pssh)
-            new_pssh[32:] = pssh
-            return base64.b64encode(new_pssh)
-        else:
-            return pssh_b64
-    
-
     def get_decryption_keys(self, pssh):
-        session = self.cdm.open_session(
-            self.check_pssh(pssh),
-            deviceconfig.DeviceConfig(deviceconfig.device_android_generic)
-        )
-        challenge = self.cdm.get_license_request(session)
-        license_b64 = base64.b64encode(
-            self.session.post(
-                'https://gue1-spclient.spotify.com/widevine-license/v1/audio/license', 
-                challenge
-            ).content
-        )
-        self.cdm.provide_license(session, license_b64)
-        decryption_keys = []
-        for key in self.cdm.get_keys(session):
-            if key.type == 'CONTENT':
-                decryption_keys.append(f'{key.kid.hex()}:{key.key.hex()}')
-        return decryption_keys[0]
+        pssh = PSSH(pssh)
+        challenge = self.cdm.get_license_challenge(self.cdm_session, pssh)
+        license_b64 = self.session.post(
+            'https://gue1-spclient.spotify.com/widevine-license/v1/audio/license', 
+            challenge
+        ).content
+        self.cdm.parse_license(self.cdm_session, license_b64)
+        return f'1:{next(i for i in self.cdm.get_keys(self.cdm_session) if i.type == "CONTENT").key.hex()}'
     
     
     def get_stream_url(self, file_id):
@@ -196,7 +172,7 @@ class SpotifyAacDownloader:
     
 
     def get_tags(self, track, unsynced_lyrics):
-        album = self.get_album(AlbumId.from_hex(track['album']['gid']).to_spotify_uri().split(':')[-1])
+        album = self.get_album(self.gid_to_uri(track['album']['gid']))
         copyright = next(i['text'] for i in album['copyrights'] if i['type'] == 'P')
         if album['release_date_precision'] == 'year':
             release_date = album['release_date'] + '-01-01'
@@ -240,11 +216,11 @@ class SpotifyAacDownloader:
     
 
     def get_encrypted_location(self, track_id):
-        return self.temp_path / f'{track_id}_encrypted.m4a'
+        return self.temp_path / f'{track_id}_encrypted.mp4'
 
     
     def get_decrypted_location(self, track_id):
-        return self.temp_path / f'{track_id}_decrypted.m4a'
+        return self.temp_path / f'{track_id}_decrypted.mp4'
     
 
     def get_fixed_location(self, track_id):
@@ -266,7 +242,7 @@ class SpotifyAacDownloader:
             'outtmpl': str(encrypted_location),
             'allow_unplayable_formats': True,
             'fixup': 'never',
-            'overwrites': True,
+            'overwrites': self.overwrite
         }) as ydl:
             ydl.download(stream_url)
     
@@ -287,13 +263,14 @@ class SpotifyAacDownloader:
     def fixup(self, decrypted_location, fixed_location):
         subprocess.run(
             [
-                'MP4Box',
-                '-add',
+                'ffmpeg',
+                '-loglevel',
+                'error',
+                '-y',
+                '-i',
                 decrypted_location,
-                '-itags',
-                'album=placeholder',
-                '-new',
-                '-quiet',
+                '-c',
+                'copy',
                 fixed_location
             ],
             check = True
@@ -303,10 +280,10 @@ class SpotifyAacDownloader:
     def make_final(self, fixed_location, final_location, tags):
         final_location.parent.mkdir(parents = True, exist_ok = True)
         shutil.copy(fixed_location, final_location)
-        file = MP4(final_location).tags
-        for key, value in tags.items():
-            file[key] = value
-        file.save(final_location)
+        file = MP4(final_location)
+        file.clear()
+        file.update(tags)
+        file.save()
 
 
     def make_lrc(self, final_location, synced_lyrics):
@@ -318,123 +295,3 @@ class SpotifyAacDownloader:
     def cleanup(self):
         if self.temp_path.exists() and not self.skip_cleanup:
             shutil.rmtree(self.temp_path)
-
-
-if __name__ == '__main__':
-    if not shutil.which('mp4decrypt'):
-        raise Exception('mp4decrypt is not on PATH')
-    if not shutil.which('MP4Box'):
-        raise Exception('MP4Box is not on PATH')
-    parser = argparse.ArgumentParser(
-        description = 'A Python script to download songs/albums/playlists directly from Spotify in 256kbps/128kbps AAC.',
-        formatter_class = argparse.ArgumentDefaultsHelpFormatter
-    )
-    parser.add_argument(
-        'url',
-        help='Spotify song/album/playlist URL(s)',
-        nargs='*',
-        metavar = '<url>'
-    )
-    parser.add_argument(
-        '-u',
-        '--urls-txt',
-        help = 'Read URLs from a text file.',
-        nargs = '?'
-    )
-    parser.add_argument(
-        '-f',
-        '--final-path',
-        default = 'Spotify',
-        help = 'Final Path.'
-    )
-    parser.add_argument(
-        '-t',
-        '--temp-path',
-        default = 'temp',
-        help = 'Temp Path.'
-    )
-    parser.add_argument(
-        '-c',
-        '--cookies-location',
-        default = 'cookies.txt',
-        help = 'Cookies location.'
-    )
-    parser.add_argument(
-        '-n',
-        '--no-lrc',
-        action = 'store_true',
-        help = "Don't create .lrc file."
-    )
-    parser.add_argument(
-        '-p',
-        '--premium-quality',
-        action = 'store_true',
-        help = 'Download AAC 256kbps instead of AAC 128kbps.'
-    )
-    parser.add_argument(
-        '-s',
-        '--skip-cleanup',
-        action = 'store_true',
-        help = 'Skip cleanup.'
-    )
-    parser.add_argument(
-        '-e',
-        '--print-exceptions',
-        action = 'store_true',
-        help = 'Print execeptions.'
-    )
-    args = parser.parse_args()
-    if not args.url and not args.urls_txt:
-        parser.error('you must specify an url or a text file using -u/--urls-txt.')
-    if args.urls_txt:
-        with open(args.urls_txt, 'r', encoding = 'utf8') as f:
-            args.url = f.read().splitlines()
-    dl = SpotifyAacDownloader(
-        args.cookies_location,
-        args.premium_quality,
-        args.temp_path,
-        args.final_path,
-        args.skip_cleanup,
-        args.no_lrc
-    )
-    download_queue = []
-    error_count = 0
-    for i, url in enumerate(args.url):
-        try:
-            download_queue.append(dl.get_download_queue(url.strip()))
-        except KeyboardInterrupt:
-            exit(1)
-        except:
-            error_count += 1
-            print(f'* Failed to check URL {i + 1}.')
-            if args.print_exceptions:
-                traceback.print_exc()
-    for i, url in enumerate(download_queue):
-        for j, track in enumerate(url):
-            print(f'Downloading "{track["name"]}" (track {j + 1} from URL {i + 1})...')
-            try:
-                file_id = dl.get_file_id(track)
-                pssh = dl.get_pssh(file_id)
-                decryption_keys = dl.get_decryption_keys(pssh)
-                stream_url = dl.get_stream_url(file_id)
-                track_id = dl.get_track_id(track)
-                encrypted_location = dl.get_encrypted_location(track_id)
-                dl.download(encrypted_location, stream_url)
-                decrypted_location = dl.get_decrypted_location(track_id)
-                dl.decrypt(decryption_keys, encrypted_location, decrypted_location)
-                fixed_location = dl.get_fixed_location(track_id)
-                dl.fixup(decrypted_location, fixed_location)
-                unsynced_lyrics, synced_lyrics = dl.get_lyrics(track_id)
-                tags = dl.get_tags(track, unsynced_lyrics)
-                final_location = dl.get_final_location(tags)
-                dl.make_final(fixed_location, final_location, tags)
-                dl.make_lrc(final_location, synced_lyrics)
-            except KeyboardInterrupt:
-                exit(1)
-            except:
-                error_count += 1
-                print(f'* Failed to download "{track["name"]}" (track {j + 1} from URL {i + 1}).')
-                if args.print_exceptions:
-                    traceback.print_exc()
-            dl.cleanup()
-    print(f'Done ({error_count} error(s)).')

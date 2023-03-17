@@ -1,28 +1,58 @@
 # Spotify ✨ AAC ✨ Downloader
-A Python script to download songs/albums/playlists directly from Spotify in 256kbps/128kbps AAC following the iTunes standard.
+A Python script to download songs/albums/playlists directly from Spotify in 256kbps/128kbps AAC.
 
 ## Setup
-1. Install Python 3.8 or higher
-2. Install the required packages using pip: 
+1. Install Python 3.7 or newer
+2. Install spotify-aac-downloader with pip
     ```
-    pip install -r requirements.txt
+    pip install spotify-aac-downloader
     ```
-3. Add MP4Box and mp4decrypt to your PATH
+3. Add mp4decrypt and ffmpeg to your PATH
     * You can get them from here:
-        * MP4Box: https://gpac.wp.imt.fr/downloads/
         * mp4decrypt: https://www.bento4.com/downloads/
-4. Export your Spotify cookies as `cookies.txt` and put it in the same folder as the script
-    * You can export your cookies by using this Google Chrome extension on Spotify website with your account logged in: https://chrome.google.com/webstore/detail/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to export it as `cookies.txt` to the same directory as the script or specify the location using `--cookies-location` argument.
-5. Put your L3 Widevine Keys (`device_client_id_blob` and `device_private_key` files) on `./pywidevine/L3/cdm/devices/android_generic` folder
-    * You can get your L3 Widevine Keys by using Dumper: https://github.com/Diazole/dumper
-        * The generated `private_key.pem` and `client_id.bin` files should be renamed to `device_private_key` and `device_client_id_blob` respectively.
+        * ffmpeg: https://ffmpeg.org/download.html
+4. Export your Spotify cookies as `cookies.txt` to the same folder that you will run the script
+    * You can export your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
+5. Put your Widevine Device file (.wvd) in the same folder that you will run the script
+    * You can use Dumper to dump your phone's L3 CDM: https://github.com/Diazole/dumper. Once you have the L3 CDM, you can use pywidevine to create the .wvd file from it.
+        1. Install pywidevine with pip
+            ```
+            pip install pywidevine pyyaml
+            ```
+        2. Create the .wvd file
+            ```
+            pywidevine create-device -t ANDROID -l 3 -k private_key.pem -c client_id.bin -o .
+            ```
 
 ## Usage
 ```
-python spotiy_aac_downloader.py [OPTIONS] [URLS]
+usage: spotify-aac-downloader [-h] [-u [URLS_TXT]] [-f FINAL_PATH] [-t TEMP_PATH] [-c COOKIES_LOCATION] [-w WVD_LOCATION] [-n]
+                   [-p] [-o] [-s] [-e] [-v]
+                   [<url> ...]
+
+Download songs/albums/playlists directly from Spotify in AAC
+
+positional arguments:
+  <url>                 Spotify song/album/playlist URL(s) (default: None)
+
+options:
+  -h, --help            show this help message and exit
+  -u [URLS_TXT], --urls-txt [URLS_TXT]
+                        Read URLs from a text file (default: None)
+  -f FINAL_PATH, --final-path FINAL_PATH
+                        Final Path (default: Spotify)
+  -t TEMP_PATH, --temp-path TEMP_PATH
+                        Temp Path (default: temp)
+  -c COOKIES_LOCATION, --cookies-location COOKIES_LOCATION
+                        Cookies location (default: cookies.txt)
+  -w WVD_LOCATION, --wvd-location WVD_LOCATION
+                        .wvd file location (default: *.wvd)
+  -n, --no-lrc          Don't create .lrc file (default: False)
+  -p, --premium-quality
+                        Download 256kbps AAC instead of 128kbps AAC (default: False)
+  -o, --overwrite       Overwrite existing files (default: False)
+  -s, --skip-cleanup    Skip cleanup (default: False)
+  -e, --print-exceptions
+                        Print execeptions (default: False)
+  -v, --version         show program's version number and exit
 ```
-Tracks are saved in `./Spotify` by default, but the directory can be changed using `--final-path` argument.
-
-By default, the script will download songs in 128kbps AAC. Use `--premium-quality` argument if you have a premium account and want to download songs in 256kbps AAC.
-
-Use `--help` argument to see all available options.
