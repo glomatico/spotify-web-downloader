@@ -7,10 +7,8 @@ A Python script to download songs/albums/playlists directly from Spotify in 256k
     ```
     pip install spotify-aac-downloader
     ```
-3. Add mp4decrypt and ffmpeg to your PATH
-    * You can get them from here:
-        * mp4decrypt: https://www.bento4.com/downloads/
-        * ffmpeg: https://ffmpeg.org/download.html
+3. Add FFMPEG to your PATH. You can get it from here: https://ffmpeg.org/download.html
+    * If you are on Windows you can move the ffmpeg.exe file to the same folder that you will run the script instead of adding it to your PATH.
 4. Export your Spotify cookies as `cookies.txt` to the same folder that you will run the script
     * You can export your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
 5. Put your Widevine Device file (.wvd) in the same folder that you will run the script

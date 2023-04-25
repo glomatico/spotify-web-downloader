@@ -45,7 +45,7 @@ class SpotifyAacDownloader:
             'sec-fetch-dest': 'empty',
             'sec-fetch-mode': 'cors',
             'sec-fetch-site': 'same-site',
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
         })
         self.session.cookies.update(cookies)
         web_page = self.session.get('https://open.spotify.com/').text
@@ -58,13 +58,13 @@ class SpotifyAacDownloader:
     def get_download_queue(self, url):
         uri = url.split('/')[-1].split('?')[0]
         download_queue = []
-        if 'track' in url:
-            download_queue.append(self.get_track(uri))
-        elif 'album' in url:
+        if 'album' in url:
             download_queue.extend(self.get_album(uri)['tracks']['items'])
+        elif 'track' in url:
+            download_queue.append(self.get_track(uri))
         elif 'playlist' in url:
             download_queue.extend([i['track'] for i in self.get_playlist(uri)['tracks']['items']])
-        if not download_queue:
+        else:
             raise Exception('Not a valid Spotify URL')
         return download_queue
 
@@ -114,15 +114,15 @@ class SpotifyAacDownloader:
         return self.session.get(f'https://seektables.scdn.co/seektable/{file_id}.json').json()['pssh']
     
 
-    def get_decryption_keys(self, pssh):
+    def get_decryption_key(self, pssh):
         pssh = PSSH(pssh)
         challenge = self.cdm.get_license_challenge(self.cdm_session, pssh)
         license = self.session.post(
             'https://gue1-spclient.spotify.com/widevine-license/v1/audio/license', 
-            challenge
+            challenge,
         ).content
         self.cdm.parse_license(self.cdm_session, license)
-        return f'1:{next(i for i in self.cdm.get_keys(self.cdm_session) if i.type == "CONTENT").key.hex()}'
+        return next(i for i in self.cdm.get_keys(self.cdm_session) if i.type == "CONTENT").key.hex()
     
     
     def get_stream_url(self, file_id):
@@ -180,12 +180,7 @@ class SpotifyAacDownloader:
             'trkn': [(track['number'], total_tracks)],
             'disk': [(track['disc_number'], total_discs)],
             '\xa9day': [f'{release_date}T00:00:00Z'],
-            'covr': [
-                MP4Cover(
-                    self.get_cover('https://i.scdn.co/image/' + next(i['file_id'] for i in track['album']['cover_group']['image'] if i['size'] == 'LARGE')),
-                    imageformat = MP4Cover.FORMAT_JPEG
-                )
-            ],
+            'covr': [MP4Cover(self.get_cover('https://i.scdn.co/image/' + next(i['file_id'] for i in track['album']['cover_group']['image'] if i['size'] == 'LARGE')), MP4Cover.FORMAT_JPEG)],
             '\xa9cmt': [f'https://open.spotify.com/track/{track["canonical_uri"].split(":")[-1]}'],
             'cprt': [copyright],
             'rtng': [1] if 'explicit' in track else [0],
@@ -209,10 +204,6 @@ class SpotifyAacDownloader:
 
     def get_encrypted_location(self, track_id):
         return self.temp_path / f'{track_id}_encrypted.mp4'
-
-    
-    def get_decrypted_location(self, track_id):
-        return self.temp_path / f'{track_id}_decrypted.mp4'
     
 
     def get_fixed_location(self, track_id):
@@ -234,36 +225,25 @@ class SpotifyAacDownloader:
             'outtmpl': str(encrypted_location),
             'allow_unplayable_formats': True,
             'fixup': 'never',
-            'overwrites': self.overwrite
+            'overwrites': self.overwrite,
         }) as ydl:
             ydl.download(stream_url)
     
 
-    def decrypt(self, keys, encrypted_location, decrypted_location):
-        subprocess.run(
-            [
-                'mp4decrypt',
-                encrypted_location,
-                '--key',
-                keys,
-                decrypted_location
-            ],
-            check = True
-        )
-    
-
-    def fixup(self, decrypted_location, fixed_location):
+    def fixup(self, decryption_key, encrypted_location, fixed_location):
         subprocess.run(
             [
                 'ffmpeg',
                 '-loglevel',
                 'error',
                 '-y',
+                '-decryption_key',
+                decryption_key,
                 '-i',
-                decrypted_location,
+                encrypted_location,
                 '-c',
                 'copy',
-                fixed_location
+                fixed_location,
             ],
             check = True
         )

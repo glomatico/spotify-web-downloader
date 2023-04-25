@@ -3,12 +3,10 @@ import argparse
 import traceback
 from .spotify_aac_downloader import SpotifyAacDownloader
 
-__version__ = '1.1'
+__version__ = '1.2'
 
 
 def main():
-    if not shutil.which('mp4decrypt'):
-        raise Exception('mp4decrypt is not on PATH')
     if not shutil.which('ffmpeg'):
         raise Exception('ffmpeg is not on PATH')
     parser = argparse.ArgumentParser(
@@ -128,14 +126,12 @@ def main():
                     continue
                 file_id = dl.get_file_id(metadata)
                 pssh = dl.get_pssh(file_id)
-                decryption_keys = dl.get_decryption_keys(pssh)
+                decryption_key = dl.get_decryption_key(pssh)
                 stream_url = dl.get_stream_url(file_id)
                 encrypted_location = dl.get_encrypted_location(track_id)
                 dl.download(encrypted_location, stream_url)
-                decrypted_location = dl.get_decrypted_location(track_id)
-                dl.decrypt(decryption_keys, encrypted_location, decrypted_location)
                 fixed_location = dl.get_fixed_location(track_id)
-                dl.fixup(decrypted_location, fixed_location)
+                dl.fixup(decryption_key, encrypted_location, fixed_location)
                 dl.make_final(fixed_location, final_location, tags)
                 dl.make_lrc(final_location, synced_lyrics)
             except KeyboardInterrupt:
