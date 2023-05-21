@@ -23,7 +23,7 @@ def main():
         '-u',
         '--urls-txt',
         help='Read URLs from a text file',
-        nargs='?',
+        action='store_true',
     )
     parser.add_argument(
         '-f',
@@ -41,7 +41,7 @@ def main():
         '-c',
         '--cookies-location',
         default='./cookies.txt',
-        help='Cookies location'
+        help='Cookies location',
     )
     parser.add_argument(
         '-w',
@@ -59,7 +59,7 @@ def main():
         '-l',
         '--lrc-only',
         action='store_true',
-        help='Skip downloading songs and only create .lrc files'
+        help='Skip downloading songs and only create .lrc files',
     )
     parser.add_argument(
         '-p',
@@ -85,11 +85,12 @@ def main():
         action='version',
     )
     args = parser.parse_args()
-    if not args.url and not args.urls_txt:
-        parser.error('you must specify an url or a text file using -u/--urls-txt')
     if args.urls_txt:
-        with open(args.urls_txt, 'r', encoding='utf8') as f:
-            args.url = f.read().splitlines()
+        _url = []
+        for url_txt in args.url:
+            with open(url_txt, 'r', encoding='utf8') as f:
+                _url.extend(f.read().splitlines())
+        args.url = _url
     dl = SpotifyAacDownloader(
         args.final_path,
         args.cookies_location,
