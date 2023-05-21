@@ -2,15 +2,16 @@ from pathlib import Path
 import glob
 from http.cookiejar import MozillaCookieJar
 import re
-import requests
 import functools
 import datetime
 import subprocess
 import shutil
+
 from pywidevine import Cdm, Device, PSSH
+import requests
 import base62
-from mutagen.mp4 import MP4, MP4Cover
 from yt_dlp import YoutubeDL
+from mutagen.mp4 import MP4, MP4Cover
 
 
 class SpotifyAacDownloader:
@@ -27,10 +28,10 @@ class SpotifyAacDownloader:
         wvd_location = glob.glob(wvd_location)
         if not wvd_location:
             raise Exception('.wvd file not found')
-        self.cdm = Cdm.from_device(Device.load(Path(wvd_location[0])))
+        self.cdm = Cdm.from_device(Device.load(wvd_location[0]))
         self.cdm_session = self.cdm.open()
-        cookies = MozillaCookieJar(Path(cookies_location))
-        cookies.load(ignore_discard = True, ignore_expires = True)
+        cookies = MozillaCookieJar(cookies_location)
+        cookies.load(ignore_discard=True, ignore_expires=True)
         self.session = requests.Session()
         self.session.headers.update({
             'app-platform': 'WebPlayer',
@@ -51,7 +52,7 @@ class SpotifyAacDownloader:
         web_page = self.session.get('https://open.spotify.com/').text
         token = re.search(r'accessToken":"(.*?)"', web_page).group(1)
         self.session.headers.update({
-            'authorization': f'Bearer {token}'
+            'authorization': f'Bearer {token}',
         })
     
 
@@ -74,7 +75,7 @@ class SpotifyAacDownloader:
     
 
     def gid_to_uri(self, gid):
-        return base62.encode(int(gid, 16), charset = base62.CHARSET_INVERTED).zfill(22)
+        return base62.encode(int(gid, 16), charset=base62.CHARSET_INVERTED).zfill(22)
     
 
     def get_track(self, track_id):
@@ -106,8 +107,8 @@ class SpotifyAacDownloader:
         return self.session.get(f'https://spclient.wg.spotify.com/metadata/4/track/{gid}?market=from_token').json()
 
 
-    def get_file_id(self, track):
-        return next(i["file_id"] for i in track["file"] if i["format"] == self.audio_quality)
+    def get_file_id(self, metadata):
+        return next(i["file_id"] for i in metadata["file"] if i["format"] == self.audio_quality)
     
 
     def get_pssh(self, file_id):
@@ -127,16 +128,14 @@ class SpotifyAacDownloader:
     
     def get_stream_url(self, file_id):
         return self.session.get(
-            f'https://gue1-spclient.spotify.com/storage-resolve/v2/files/audio/interactive/11/{file_id}?version=10000000&product=9&platform=39&alt=json'
+            f'https://gue1-spclient.spotify.com/storage-resolve/v2/files/audio/interactive/11/{file_id}?version=10000000&product=9&platform=39&alt=json',
         ).json()['cdnurl'][0]
     
 
     def get_artist(self, artist_list):
         if len(artist_list) == 1:
             return artist_list[0]['name']
-        artist = ', '.join(i['name'] for i in artist_list[:-1])
-        artist += f' & {artist_list[-1]["name"]}'
-        return artist
+        return ', '.join(i['name'] for i in artist_list[:-1]) + f' & {artist_list[-1]["name"]}'
     
 
     def get_synced_lyrics_formated_time(self, time):
@@ -163,27 +162,27 @@ class SpotifyAacDownloader:
         return requests.get(url).content
     
 
-    def get_tags(self, track, unsynced_lyrics):
-        album = self.get_album(self.gid_to_uri(track['album']['gid']))
+    def get_tags(self, metadata, unsynced_lyrics):
+        album = self.get_album(self.gid_to_uri(metadata['album']['gid']))
         copyright = next(i['text'] for i in album['copyrights'] if i['type'] == 'P')
         if album['release_date_precision'] == 'year':
             release_date = album['release_date'] + '-01-01'
         else:
             release_date = album['release_date']
-        total_tracks = [i['track_number'] for i in album['tracks']['items'] if i['disc_number'] == track['disc_number']][-1]
+        total_tracks = [i['track_number'] for i in album['tracks']['items'] if i['disc_number'] == metadata['disc_number']][-1]
         total_discs = album['tracks']['items'][-1]['disc_number']
         tags = {
-            '\xa9nam': [track['name']],
-            '\xa9ART': [self.get_artist(track['artist'])],
-            'aART': [self.get_artist(track['album']['artist'])],
-            '\xa9alb': [track['album']['name']],
-            'trkn': [(track['number'], total_tracks)],
-            'disk': [(track['disc_number'], total_discs)],
+            '\xa9nam': [metadata['name']],
+            '\xa9ART': [self.get_artist(metadata['artist'])],
+            'aART': [self.get_artist(metadata['album']['artist'])],
+            '\xa9alb': [metadata['album']['name']],
+            'trkn': [(metadata['number'], total_tracks)],
+            'disk': [(metadata['disc_number'], total_discs)],
             '\xa9day': [f'{release_date}T00:00:00Z'],
-            'covr': [MP4Cover(self.get_cover('https://i.scdn.co/image/' + next(i['file_id'] for i in track['album']['cover_group']['image'] if i['size'] == 'LARGE')), MP4Cover.FORMAT_JPEG)],
-            '\xa9cmt': [f'https://open.spotify.com/track/{track["canonical_uri"].split(":")[-1]}'],
+            'covr': [MP4Cover(self.get_cover('https://i.scdn.co/image/' + next(i['file_id'] for i in metadata['album']['cover_group']['image'] if i['size'] == 'LARGE')))],
+            '\xa9cmt': [f'https://open.spotify.com/track/{metadata["canonical_uri"].split(":")[-1]}'],
             'cprt': [copyright],
-            'rtng': [1] if 'explicit' in track else [0],
+            'rtng': [1] if 'explicit' in metadata else [0],
         }
         if unsynced_lyrics is not None:
             tags['\xa9lyr'] = [unsynced_lyrics]
@@ -191,11 +190,10 @@ class SpotifyAacDownloader:
     
 
     def get_sanizated_string(self, dirty_string, is_folder):
-        for character in ['\\', '/', ':', '*', '?', '"', '<', '>', '|', ';']:
-            dirty_string = dirty_string.replace(character, '_')
+        dirty_string = re.sub(r'[\\/:\*\?"<>\|;]', '_', dirty_string)
         if is_folder:
             dirty_string = dirty_string[:40]
-            if dirty_string[-1:] == '.':
+            if dirty_string.endswith('.'):
                 dirty_string = dirty_string[:-1] + '_'
         else:
             dirty_string = dirty_string[:36]
@@ -245,22 +243,21 @@ class SpotifyAacDownloader:
                 'copy',
                 fixed_location,
             ],
-            check = True
+            check=True
         )
     
 
     def make_final(self, fixed_location, final_location, tags):
-        final_location.parent.mkdir(parents = True, exist_ok = True)
-        shutil.copy(fixed_location, final_location)
-        file = MP4(final_location)
+        file = MP4(fixed_location)
         file.clear()
         file.update(tags)
         file.save()
+        shutil.move(fixed_location, final_location)
 
 
     def make_lrc(self, final_location, synced_lyrics):
         if synced_lyrics and not self.no_lrc:
-            with open(final_location.with_suffix('.lrc'), 'w', encoding = 'utf8') as f:
+            with open(final_location.with_suffix('.lrc'), 'w', encoding='utf8') as f:
                 f.write(synced_lyrics)
     
 
