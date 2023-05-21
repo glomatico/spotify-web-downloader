@@ -15,10 +15,9 @@ from mutagen.mp4 import MP4, MP4Cover
 
 
 class SpotifyAacDownloader:
-    def __init__(self, final_path, cookies_location, temp_path, wvd_location, premium_quality, overwrite, no_lrc, lrc_only):
+    def __init__(self, final_path, cookies_location, temp_path, wvd_location, premium_quality, overwrite, lrc_only):
         self.temp_path = Path(temp_path)
         self.final_path = Path(final_path)
-        self.no_lrc = no_lrc
         self.overwrite = overwrite
         if premium_quality:
             self.audio_quality = 'MP4_256'
@@ -256,7 +255,7 @@ class SpotifyAacDownloader:
 
 
     def make_lrc(self, final_location, synced_lyrics):
-        if synced_lyrics and not self.no_lrc:
+        if synced_lyrics:
             with open(final_location.with_suffix('.lrc'), 'w', encoding='utf8') as f:
                 f.write(synced_lyrics)
     
