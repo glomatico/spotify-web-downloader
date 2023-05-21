@@ -68,12 +68,6 @@ def main():
         help='Overwrite existing files',
     )
     parser.add_argument(
-        '-s',
-        '--skip-cleanup',
-        action='store_true',
-        help='Skip cleanup',
-    )
-    parser.add_argument(
         '-e',
         '--print-exceptions',
         action='store_true',
@@ -97,7 +91,6 @@ def main():
         args.wvd_location,
         args.premium_quality,
         args.overwrite,
-        args.skip_cleanup,
         args.no_lrc,
     )
     download_queue = []

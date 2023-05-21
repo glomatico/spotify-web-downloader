@@ -24,32 +24,33 @@ A Python script to download songs/albums/playlists directly from Spotify in 256k
 
 ## Usage
 ```
-usage: spotify-aac-downloader [-h] [-u [URLS_TXT]] [-f FINAL_PATH] [-t TEMP_PATH] [-c COOKIES_LOCATION] [-w WVD_LOCATION] [-n]
-                   [-p] [-o] [-s] [-e] [-v]
-                   [<url> ...]
+usage: spotify-aac-downloader [-h] [-u [URLS_TXT]] [-f FINAL_PATH] [-t TEMP_PATH]
+                   [-c COOKIES_LOCATION] [-w WVD_LOCATION] [-n] [-p] [-o] [-e]
+                   [-v]
+                   [url ...]
 
 Download songs/albums/playlists directly from Spotify in AAC
 
 positional arguments:
-  <url>                 Spotify song/album/playlist URL(s) (default: None)
+  url                   Spotify song/album/playlist URL(s) (default: None)
 
 options:
   -h, --help            show this help message and exit
   -u [URLS_TXT], --urls-txt [URLS_TXT]
                         Read URLs from a text file (default: None)
   -f FINAL_PATH, --final-path FINAL_PATH
-                        Final Path (default: Spotify)
+                        Final Path (default: ./Spotify)
   -t TEMP_PATH, --temp-path TEMP_PATH
-                        Temp Path (default: temp)
+                        Temp Path (default: ./temp)
   -c COOKIES_LOCATION, --cookies-location COOKIES_LOCATION
-                        Cookies location (default: cookies.txt)
+                        Cookies location (default: ./cookies.txt)
   -w WVD_LOCATION, --wvd-location WVD_LOCATION
-                        .wvd file location (default: *.wvd)
+                        .wvd file location (default: ./*.wvd)
   -n, --no-lrc          Don't create .lrc file (default: False)
   -p, --premium-quality
-                        Download 256kbps AAC instead of 128kbps AAC (default: False)
+                        Download 256kbps AAC instead of 128kbps AAC (default:
+                        False)
   -o, --overwrite       Overwrite existing files (default: False)
-  -s, --skip-cleanup    Skip cleanup (default: False)
   -e, --print-exceptions
                         Print execeptions (default: False)
   -v, --version         show program's version number and exit

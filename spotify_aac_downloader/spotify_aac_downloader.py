@@ -15,10 +15,9 @@ from mutagen.mp4 import MP4, MP4Cover
 
 
 class SpotifyAacDownloader:
-    def __init__(self, final_path, cookies_location, temp_path, wvd_location, premium_quality, overwrite, skip_cleanup, no_lrc):
+    def __init__(self, final_path, cookies_location, temp_path, wvd_location, premium_quality, overwrite, no_lrc):
         self.temp_path = Path(temp_path)
         self.final_path = Path(final_path)
-        self.skip_cleanup = skip_cleanup
         self.no_lrc = no_lrc
         self.overwrite = overwrite
         if premium_quality:
@@ -262,5 +261,5 @@ class SpotifyAacDownloader:
     
 
     def cleanup(self):
-        if self.temp_path.exists() and not self.skip_cleanup:
+        if self.temp_path.exists():
             shutil.rmtree(self.temp_path)
