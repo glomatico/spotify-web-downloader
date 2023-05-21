@@ -47,13 +47,19 @@ def main():
         '-w',
         '--wvd-location',
         default='./*.wvd',
-        help='.wvd file location',
+        help='.wvd file location (ignored if using -l/--lrc-only)',
     )
     parser.add_argument(
         '-n',
         '--no-lrc',
         action='store_true',
-        help="Don't create .lrc file",
+        help="Don't create .lrc files",
+    )
+    parser.add_argument(
+        '-l',
+        '--lrc-only',
+        action='store_true',
+        help='Skip downloading songs and only create .lrc files'
     )
     parser.add_argument(
         '-p',
@@ -92,6 +98,7 @@ def main():
         args.premium_quality,
         args.overwrite,
         args.no_lrc,
+        args.lrc_only,
     )
     download_queue = []
     error_count = 0
@@ -115,6 +122,10 @@ def main():
                 unsynced_lyrics, synced_lyrics = dl.get_lyrics(track_id)
                 tags = dl.get_tags(metadata, unsynced_lyrics)
                 final_location = dl.get_final_location(tags)
+                if args.lrc_only:
+                    final_location.parent.mkdir(parents=True, exist_ok=True)
+                    dl.make_lrc(final_location, synced_lyrics)
+                    continue
                 if not args.overwrite and final_location.exists():
                     continue
                 file_id = dl.get_file_id(metadata)

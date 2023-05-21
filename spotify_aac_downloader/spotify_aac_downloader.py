@@ -15,7 +15,7 @@ from mutagen.mp4 import MP4, MP4Cover
 
 
 class SpotifyAacDownloader:
-    def __init__(self, final_path, cookies_location, temp_path, wvd_location, premium_quality, overwrite, no_lrc):
+    def __init__(self, final_path, cookies_location, temp_path, wvd_location, premium_quality, overwrite, no_lrc, lrc_only):
         self.temp_path = Path(temp_path)
         self.final_path = Path(final_path)
         self.no_lrc = no_lrc
@@ -24,11 +24,12 @@ class SpotifyAacDownloader:
             self.audio_quality = 'MP4_256'
         else:
             self.audio_quality = 'MP4_128'
-        wvd_location = glob.glob(wvd_location)
-        if not wvd_location:
-            raise Exception('.wvd file not found')
-        self.cdm = Cdm.from_device(Device.load(wvd_location[0]))
-        self.cdm_session = self.cdm.open()
+        if not lrc_only:
+            wvd_location = glob.glob(wvd_location)
+            if not wvd_location:
+                raise Exception('.wvd file not found')
+            self.cdm = Cdm.from_device(Device.load(wvd_location[0]))
+            self.cdm_session = self.cdm.open()
         cookies = MozillaCookieJar(cookies_location)
         cookies.load(ignore_discard=True, ignore_expires=True)
         self.session = requests.Session()
