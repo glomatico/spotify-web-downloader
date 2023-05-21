@@ -8,8 +8,9 @@ __version__ = '1.2'
 
 
 def main():
-    if not shutil.which('ffmpeg'):
-        raise Exception('ffmpeg is not on PATH')
+    for tool in ('ffmpeg'):
+        if not shutil.which(tool):
+            raise Exception(f'{tool} is not on PATH')
     parser = argparse.ArgumentParser(
         description='Download songs/albums/playlists directly from Spotify in AAC',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
