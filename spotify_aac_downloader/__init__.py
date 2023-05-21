@@ -4,7 +4,7 @@ import traceback
 
 from .spotify_aac_downloader import SpotifyAacDownloader
 
-__version__ = '1.2'
+__version__ = '1.3'
 
 
 def main():
