@@ -1,4 +1,4 @@
-from . import main
+import spotify_aac_downloader
 
 if __name__ == '__main__':
-    main()
+    spotify_aac_downloader.main()
