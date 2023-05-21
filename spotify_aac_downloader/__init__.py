@@ -8,7 +8,7 @@ __version__ = '1.2'
 
 
 def main():
-    for tool in ('ffmpeg'):
+    for tool in ['ffmpeg']:
         if not shutil.which(tool):
             raise Exception(f'{tool} is not on PATH')
     parser = argparse.ArgumentParser(
@@ -99,7 +99,6 @@ def main():
         args.wvd_location,
         args.premium_quality,
         args.overwrite,
-        args.no_lrc,
         args.lrc_only,
     )
     download_queue = []
@@ -140,7 +139,8 @@ def main():
                 dl.fixup(decryption_key, encrypted_location, fixed_location)
                 final_location.parent.mkdir(parents=True, exist_ok=True)
                 dl.make_final(fixed_location, final_location, tags)
-                dl.make_lrc(final_location, synced_lyrics)
+                if not args.no_lrc:
+                    dl.make_lrc(final_location, synced_lyrics)
             except KeyboardInterrupt:
                 exit(1)
             except:
