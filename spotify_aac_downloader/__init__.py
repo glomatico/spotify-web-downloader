@@ -1,6 +1,7 @@
 import shutil
 import argparse
 import traceback
+
 from .spotify_aac_downloader import SpotifyAacDownloader
 
 __version__ = '1.2'
@@ -10,85 +11,84 @@ def main():
     if not shutil.which('ffmpeg'):
         raise Exception('ffmpeg is not on PATH')
     parser = argparse.ArgumentParser(
-        description = 'Download songs/albums/playlists directly from Spotify in AAC',
-        formatter_class = argparse.ArgumentDefaultsHelpFormatter
+        description='Download songs/albums/playlists directly from Spotify in AAC',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         'url',
         help='Spotify song/album/playlist URL(s)',
         nargs='*',
-        metavar = '<url>'
     )
     parser.add_argument(
         '-u',
         '--urls-txt',
-        help = 'Read URLs from a text file',
-        nargs = '?'
+        help='Read URLs from a text file',
+        nargs='?',
     )
     parser.add_argument(
         '-f',
         '--final-path',
-        default = 'Spotify',
-        help = 'Final Path'
+        default='./Spotify',
+        help='Final Path',
     )
     parser.add_argument(
         '-t',
         '--temp-path',
-        default = 'temp',
-        help = 'Temp Path'
+        default='./temp',
+        help='Temp Path',
     )
     parser.add_argument(
         '-c',
         '--cookies-location',
-        default = 'cookies.txt',
-        help = 'Cookies location'
+        default='./cookies.txt',
+        help='Cookies location'
     )
     parser.add_argument(
         '-w',
         '--wvd-location',
-        default = '*.wvd',
-        help = '.wvd file location'
+        default='./*.wvd',
+        help='.wvd file location',
     )
     parser.add_argument(
         '-n',
         '--no-lrc',
-        action = 'store_true',
-        help = "Don't create .lrc file"
+        action='store_true',
+        help="Don't create .lrc file",
     )
     parser.add_argument(
         '-p',
         '--premium-quality',
-        action = 'store_true',
-        help = 'Download 256kbps AAC instead of 128kbps AAC'
+        action='store_true',
+        help='Download 256kbps AAC instead of 128kbps AAC',
     )
     parser.add_argument(
         '-o',
         '--overwrite',
-        action = 'store_true',
-        help = 'Overwrite existing files'
+        action='store_true',
+        help='Overwrite existing files',
     )
     parser.add_argument(
         '-s',
         '--skip-cleanup',
-        action = 'store_true',
-        help = 'Skip cleanup'
+        action='store_true',
+        help='Skip cleanup',
     )
     parser.add_argument(
         '-e',
         '--print-exceptions',
-        action = 'store_true',
-        help = 'Print execeptions'
+        action='store_true',
+        help='Print execeptions',
     )
     parser.add_argument(
         '-v',
         '--version',
-        action = 'version'
+        action='version',
     )
     args = parser.parse_args()
     if not args.url and not args.urls_txt:
         parser.error('you must specify an url or a text file using -u/--urls-txt')
     if args.urls_txt:
-        with open(args.urls_txt, 'r', encoding = 'utf8') as f:
+        with open(args.urls_txt, 'r', encoding='utf8') as f:
             args.url = f.read().splitlines()
     dl = SpotifyAacDownloader(
         args.final_path,
@@ -98,7 +98,7 @@ def main():
         args.premium_quality,
         args.overwrite,
         args.skip_cleanup,
-        args.no_lrc
+        args.no_lrc,
     )
     download_queue = []
     error_count = 0
@@ -132,6 +132,7 @@ def main():
                 dl.download(encrypted_location, stream_url)
                 fixed_location = dl.get_fixed_location(track_id)
                 dl.fixup(decryption_key, encrypted_location, fixed_location)
+                final_location.parent.mkdir(parents=True, exist_ok=True)
                 dl.make_final(fixed_location, final_location, tags)
                 dl.make_lrc(final_location, synced_lyrics)
             except KeyboardInterrupt:
