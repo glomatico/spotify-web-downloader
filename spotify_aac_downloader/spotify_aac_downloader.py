@@ -107,7 +107,11 @@ class SpotifyAacDownloader:
 
 
     def get_file_id(self, metadata):
-        return next(i["file_id"] for i in metadata["file"] if i["format"] == self.audio_quality)
+        audio_files = metadata.get("file")
+        # If the main metadata does not directly contain the audio files but the alternative may, try that instead
+        if audio_files is None:
+            audio_files = metadata["alternative"][0]["file"]
+        return next(i["file_id"] for i in audio_files if i["format"] == self.audio_quality)
     
 
     def get_pssh(self, file_id):
