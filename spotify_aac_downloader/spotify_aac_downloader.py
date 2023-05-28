@@ -6,8 +6,9 @@ import functools
 import datetime
 import subprocess
 import shutil
+import time
 
-from pywidevine import Cdm, Device, PSSH
+from pywidevine import Cdm, Device, PSSH, InvalidLicenseMessage
 import requests
 import base62
 from yt_dlp import YoutubeDL
@@ -52,6 +53,23 @@ class SpotifyAacDownloader:
         token = re.search(r'accessToken":"(.*?)"', web_page).group(1)
         self.session.headers.update({
             'authorization': f'Bearer {token}',
+        })
+        # Create unauthorized basic session to help in some scenarios
+        self.basic_session = requests.Session()
+        self.basic_session.headers.update({
+            'app-platform': 'WebPlayer',
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'accept-language': 'en-CA,en-US;q=0.7,en;q=0.3',
+            'accept-encoding': 'gzip, deflate, br',
+            'dnt': '1',
+            'connection': 'keep-alive',
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'cross-site',
+            'sec-gpc': '1',
+            'pragma': 'no-cache',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0',
+            'Upgrade-Insecure-Requests': '1',
         })
     
 
@@ -110,25 +128,51 @@ class SpotifyAacDownloader:
         audio_files = metadata.get("file")
         # If the main metadata does not directly contain the audio files but the alternative may, try that instead
         if audio_files is None:
-            audio_files = metadata["alternative"][0]["file"]
+            audio_files = metadata.get("alternative")
+            if audio_files is None:
+                raise Exception("Spotify does not have audio files for this song. This is likely either a region issue, or the song was removed from Spotify")
+            audio_files = audio_files[0]["file"]
         return next(i["file_id"] for i in audio_files if i["format"] == self.audio_quality)
     
 
     def get_pssh(self, file_id):
-        return self.session.get(f'https://seektables.scdn.co/seektable/{file_id}.json').json()['pssh']
+        seektable_file = self.session.get(f'https://seektables.scdn.co/seektable/{file_id}.json')
+        try:
+            return seektable_file.json()['pssh']
+        except ValueError:
+            # This may be cached on your session/cookies at this point, fall back on a generic request
+            seektable_file = self.basic_session.get(f'https://seektables.scdn.co/seektable/{file_id}.json')
+            return seektable_file.json()['pssh']
     
 
     def get_decryption_key(self, pssh):
         pssh = PSSH(pssh)
-        challenge = self.cdm.get_license_challenge(self.cdm_session, pssh)
-        license = self.session.post(
-            'https://gue1-spclient.spotify.com/widevine-license/v1/audio/license', 
-            challenge,
-        ).content
-        self.cdm.parse_license(self.cdm_session, license)
+        decrypt_attempts = 0
+        while decrypt_attempts < 5:
+            seconds_to_sleep = 60 * decrypt_attempts
+            if seconds_to_sleep > 0:
+                print("Rate limit possibly hit, waiting {} seconds to retry", seconds_to_sleep)
+            else:
+                # Artificially rate limit it to slow it down and avoid frequently hitting the rate limit
+                seconds_to_sleep = 1
+            time.sleep(seconds_to_sleep)
+
+            challenge = self.cdm.get_license_challenge(self.cdm_session, pssh)
+            license = self.session.post(
+                'https://gue1-spclient.spotify.com/widevine-license/v1/audio/license',
+                challenge,
+            ).content
+            try:
+                self.cdm.parse_license(self.cdm_session, license)
+                # Success, we can continue
+                break
+            except InvalidLicenseMessage as license_exception:
+                print(license_exception)
+            decrypt_attempts += 1
+        
         return next(i for i in self.cdm.get_keys(self.cdm_session) if i.type == "CONTENT").key.hex()
     
-    
+
     def get_stream_url(self, file_id):
         return self.session.get(
             f'https://gue1-spclient.spotify.com/storage-resolve/v2/files/audio/interactive/11/{file_id}?version=10000000&product=9&platform=39&alt=json',
@@ -167,7 +211,12 @@ class SpotifyAacDownloader:
 
     def get_tags(self, metadata, unsynced_lyrics):
         album = self.get_album(self.gid_to_uri(metadata['album']['gid']))
-        copyright = next(i['text'] for i in album['copyrights'] if i['type'] == 'P')
+        copyright = ''
+        try:
+            copyright = next(i['text'] for i in album['copyrights'] if i['type'] == 'P')
+        except StopIteration:
+            # There was no copyright value found that was equivalent
+            pass
         if album['release_date_precision'] == 'year':
             release_date = album['release_date'] + '-01-01'
         else:
