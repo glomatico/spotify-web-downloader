@@ -179,10 +179,14 @@ class SpotifyAacDownloader:
         ).json()['cdnurl'][0]
     
 
-    def get_artist(self, artist_list):
+    def get_artists(self, artist_list):
         if len(artist_list) == 1:
             return artist_list[0]['name']
-        return ', '.join(i['name'] for i in artist_list[:-1]) + f' & {artist_list[-1]["name"]}'
+        return ';'.join(i['name'] for i in artist_list)
+    
+
+    def get_artist(self, artist_list):
+        return artist_list[0]['name']
     
 
     def get_synced_lyrics_formated_time(self, time):
@@ -213,9 +217,10 @@ class SpotifyAacDownloader:
         album = self.get_album(self.gid_to_uri(metadata['album']['gid']))
         copyright = ''
         try:
-            copyright = next(i['text'] for i in album['copyrights'] if i['type'] == 'P')
+            copyright = next(i['text'] for i in album['copyrights'] if i['type'] == 'P' or i['type'] == 'T')
         except StopIteration:
             # There was no copyright value found that was equivalent
+            print("No copyright value found. Full collection checked was: {}", album['copyrights'])
             pass
         if album['release_date_precision'] == 'year':
             release_date = album['release_date'] + '-01-01'
@@ -225,7 +230,7 @@ class SpotifyAacDownloader:
         total_discs = album['tracks']['items'][-1]['disc_number']
         tags = {
             '\xa9nam': [metadata['name']],
-            '\xa9ART': [self.get_artist(metadata['artist'])],
+            '\xa9ART': [self.get_artists(metadata['artist'])],
             'aART': [self.get_artist(metadata['album']['artist'])],
             '\xa9alb': [metadata['album']['name']],
             'trkn': [(metadata['number'], total_tracks)],
