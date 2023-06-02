@@ -244,11 +244,11 @@ class SpotifyAacDownloader:
     def get_sanizated_string(self, dirty_string, is_folder):
         dirty_string = re.sub(r'[\\/:\*\?"<>\|;]', '_', dirty_string)
         if is_folder:
-            dirty_string = dirty_string[:40]
+            dirty_string = dirty_string[:200]
             if dirty_string.endswith('.'):
                 dirty_string = dirty_string[:-1] + '_'
         else:
-            dirty_string = dirty_string[:36]
+            dirty_string = dirty_string[:180]
         return dirty_string.strip()
     
 
