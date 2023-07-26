@@ -1,95 +1,95 @@
-import shutil
 import argparse
+import shutil
 import traceback
 
 from .spotify_aac_downloader import SpotifyAacDownloader
 
-__version__ = '1.3'
+__version__ = "1.3"
 
 
 def main():
-    for tool in ['ffmpeg']:
+    for tool in ["ffmpeg"]:
         if not shutil.which(tool):
-            raise Exception(f'{tool} is not on PATH')
+            raise Exception(f"{tool} is not on PATH")
     parser = argparse.ArgumentParser(
-        description='Download songs/albums/playlists directly from Spotify in AAC',
+        description="Download songs/albums/playlists directly from Spotify in AAC",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        'url',
-        help='Spotify song/album/playlist URL(s)',
-        nargs='*',
+        "url",
+        help="Spotify song/album/playlist URL(s)",
+        nargs="*",
     )
     parser.add_argument(
-        '-u',
-        '--urls-txt',
-        help='Read URLs from a text file',
-        action='store_true',
+        "-u",
+        "--urls-txt",
+        help="Read URLs from a text file",
+        action="store_true",
     )
     parser.add_argument(
-        '-f',
-        '--final-path',
-        default='./Spotify',
-        help='Final Path',
+        "-f",
+        "--final-path",
+        default="./Spotify",
+        help="Final Path",
     )
     parser.add_argument(
-        '-t',
-        '--temp-path',
-        default='./temp',
-        help='Temp Path',
+        "-t",
+        "--temp-path",
+        default="./temp",
+        help="Temp Path",
     )
     parser.add_argument(
-        '-c',
-        '--cookies-location',
-        default='./cookies.txt',
-        help='Cookies location',
+        "-c",
+        "--cookies-location",
+        default="./cookies.txt",
+        help="Cookies location",
     )
     parser.add_argument(
-        '-w',
-        '--wvd-location',
-        default='./*.wvd',
-        help='.wvd file location (ignored if using -l/--lrc-only)',
+        "-w",
+        "--wvd-location",
+        default="./*.wvd",
+        help=".wvd file location (ignored if using -l/--lrc-only)",
     )
     parser.add_argument(
-        '-n',
-        '--no-lrc',
-        action='store_true',
+        "-n",
+        "--no-lrc",
+        action="store_true",
         help="Don't create .lrc files",
     )
     parser.add_argument(
-        '-l',
-        '--lrc-only',
-        action='store_true',
-        help='Skip downloading songs and only create .lrc files',
+        "-l",
+        "--lrc-only",
+        action="store_true",
+        help="Skip downloading songs and only create .lrc files",
     )
     parser.add_argument(
-        '-p',
-        '--premium-quality',
-        action='store_true',
-        help='Download 256kbps AAC instead of 128kbps AAC',
+        "-p",
+        "--premium-quality",
+        action="store_true",
+        help="Download 256kbps AAC instead of 128kbps AAC",
     )
     parser.add_argument(
-        '-o',
-        '--overwrite',
-        action='store_true',
-        help='Overwrite existing files',
+        "-o",
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing files",
     )
     parser.add_argument(
-        '-e',
-        '--print-exceptions',
-        action='store_true',
-        help='Print execeptions',
+        "-e",
+        "--print-exceptions",
+        action="store_true",
+        help="Print execeptions",
     )
     parser.add_argument(
-        '-v',
-        '--version',
-        action='version',
+        "-v",
+        "--version",
+        action="version",
     )
     args = parser.parse_args()
     if args.urls_txt:
         _url = []
         for url_txt in args.url:
-            with open(url_txt, 'r', encoding='utf8') as f:
+            with open(url_txt, "r", encoding="utf8") as f:
                 _url.extend(f.read().splitlines())
         args.url = _url
     dl = SpotifyAacDownloader(
@@ -110,14 +110,16 @@ def main():
             exit(1)
         except:
             error_count += 1
-            print(f'Failed to check URL {i + 1}/{len(args.url)}')
+            print(f"Failed to check URL {i + 1}/{len(args.url)}")
             if args.print_exceptions:
                 traceback.print_exc()
     for i, url in enumerate(download_queue):
         for j, track in enumerate(url):
-            print(f'Downloading "{track["name"]}" (track {j + 1}/{len(url)} from URL {i + 1}/{len(download_queue)})')
+            print(
+                f'Downloading "{track["name"]}" (track {j + 1}/{len(url)} from URL {i + 1}/{len(download_queue)})'
+            )
             try:
-                track_id = track['id']
+                track_id = track["id"]
                 gid = dl.uri_to_gid(track_id)
                 metadata = dl.get_metadata(gid)
                 unsynced_lyrics, synced_lyrics = dl.get_lyrics(track_id)
@@ -145,8 +147,10 @@ def main():
                 exit(1)
             except:
                 error_count += 1
-                print(f'Failed to download "{track["name"]}" (track {j + 1}/{len(url)} from URL {i + 1}/{len(download_queue)})')
+                print(
+                    f'Failed to download "{track["name"]}" (track {j + 1}/{len(url)} from URL {i + 1}/{len(download_queue)})'
+                )
                 if args.print_exceptions:
                     traceback.print_exc()
             dl.cleanup()
-    print(f'Done ({error_count} error(s))')
+    print(f"Done ({error_count} error(s))")
