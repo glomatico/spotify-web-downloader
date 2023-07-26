@@ -14,7 +14,7 @@ from pywidevine import PSSH, Cdm, Device
 from yt_dlp import YoutubeDL
 
 
-class SpotifyAacDownloader:
+class Dl:
     def __init__(
         self,
         final_path,

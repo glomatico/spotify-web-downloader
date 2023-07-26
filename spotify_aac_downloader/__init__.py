@@ -2,7 +2,7 @@ import argparse
 import shutil
 import traceback
 
-from .spotify_aac_downloader import SpotifyAacDownloader
+from .dl import Dl
 
 __version__ = "1.3"
 
@@ -92,7 +92,7 @@ def main():
             with open(url_txt, "r", encoding="utf8") as f:
                 _url.extend(f.read().splitlines())
         args.url = _url
-    dl = SpotifyAacDownloader(
+    dl = Dl(
         args.final_path,
         args.cookies_location,
         args.temp_path,
