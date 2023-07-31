@@ -1,6 +1,5 @@
 import datetime
 import functools
-import glob
 import re
 import shutil
 import subprocess
@@ -13,30 +12,55 @@ from mutagen.mp4 import MP4, MP4Cover
 from pywidevine import PSSH, Cdm, Device
 from yt_dlp import YoutubeDL
 
+MP4_TAGS_MAP = {
+    "album": "\xa9alb",
+    "album_artist": "aART",
+    "artist": "\xa9ART",
+    "comment": "\xa9cmt",
+    "compilation": "cpil",
+    "copyright": "cprt",
+    "lyrics": "\xa9lyr",
+    "media_type": "stik",
+    "rating": "rtng",
+    "release_date": "\xa9day",
+    "title": "\xa9nam",
+}
+
 
 class Dl:
     def __init__(
         self,
-        final_path,
-        cookies_location,
-        temp_path,
-        wvd_location,
-        premium_quality,
-        overwrite,
-        lrc_only,
+        final_path: Path,
+        temp_path: Path,
+        cookies_location: Path,
+        wvd_location: Path,
+        ffmpeg_location: Path,
+        folder_template_album: str,
+        folder_template_compilation: str,
+        file_template_single_disc: str,
+        file_template_multi_disc: str,
+        exclude_tags: str,
+        truncate: int,
+        premium_quality: bool,
+        lrc_only: bool,
+        **kwargs,
     ):
-        self.temp_path = Path(temp_path)
-        self.final_path = Path(final_path)
-        self.overwrite = overwrite
-        if premium_quality:
-            self.audio_quality = "MP4_256"
-        else:
-            self.audio_quality = "MP4_128"
+        self.final_path = final_path
+        self.temp_path = temp_path
+        self.ffmpeg_location = ffmpeg_location
+        self.folder_template_album = folder_template_album
+        self.folder_template_compilation = folder_template_compilation
+        self.file_template_single_disc = file_template_single_disc
+        self.file_template_multi_disc = file_template_multi_disc
+        self.exclude_tags = (
+            [i.lower() for i in exclude_tags.split(",")]
+            if exclude_tags is not None
+            else []
+        )
+        self.truncate = None if truncate < 4 else truncate
+        self.audio_quality = "MP4_256" if premium_quality else "MP4_128"
         if not lrc_only:
-            wvd_location = glob.glob(wvd_location)
-            if not wvd_location:
-                raise Exception(".wvd file not found")
-            self.cdm = Cdm.from_device(Device.load(wvd_location[0]))
+            self.cdm = Cdm.from_device(Device.load(wvd_location))
             self.cdm_session = self.cdm.open()
         cookies = MozillaCookieJar(cookies_location)
         cookies.load(ignore_discard=True, ignore_expires=True)
@@ -119,7 +143,6 @@ class Dl:
 
     def get_file_id(self, metadata):
         audio_files = metadata.get("file")
-        # If the main metadata does not directly contain the audio files but the alternative may, try that instead
         if audio_files is None:
             audio_files = metadata["alternative"][0]["file"]
         return next(
@@ -145,7 +168,8 @@ class Dl:
 
     def get_stream_url(self, file_id):
         return self.session.get(
-            f"https://gue1-spclient.spotify.com/storage-resolve/v2/files/audio/interactive/11/{file_id}?version=10000000&product=9&platform=39&alt=json",
+            "https://gue1-spclient.spotify.com/storage-resolve/v2/files/audio/interactive/11/"
+            + f"{file_id}?version=10000000&product=9&platform=39&alt=json",
         ).json()["cdnurl"][0]
 
     def get_artist(self, artist_list):
@@ -179,57 +203,63 @@ class Dl:
     def get_cover(self, url):
         return requests.get(url).content
 
+    def get_iso_release_date(self, release_date_precision, release_date):
+        if release_date_precision == "year":
+            datetime_template = "%Y"
+        elif release_date_precision == "month":
+            datetime_template = "%Y-%m"
+        else:
+            datetime_template = "%Y-%m-%d"
+        return (
+            datetime.datetime.strptime(release_date, datetime_template).isoformat()
+            + "Z"
+        )
+
     def get_tags(self, metadata, unsynced_lyrics):
         album = self.get_album(self.gid_to_uri(metadata["album"]["gid"]))
-        copyright = next(i["text"] for i in album["copyrights"] if i["type"] == "P")
-        if album["release_date_precision"] == "year":
-            release_date = album["release_date"] + "-01-01"
-        else:
-            release_date = album["release_date"]
-        total_tracks = [
-            i["track_number"]
-            for i in album["tracks"]["items"]
-            if i["disc_number"] == metadata["disc_number"]
-        ][-1]
-        total_discs = album["tracks"]["items"][-1]["disc_number"]
         tags = {
-            "\xa9nam": [metadata["name"]],
-            "\xa9ART": [self.get_artist(metadata["artist"])],
-            "aART": [self.get_artist(metadata["album"]["artist"])],
-            "\xa9alb": [metadata["album"]["name"]],
-            "trkn": [(metadata["number"], total_tracks)],
-            "disk": [(metadata["disc_number"], total_discs)],
-            "\xa9day": [f"{release_date}T00:00:00Z"],
-            "covr": [
-                MP4Cover(
-                    self.get_cover(
-                        "https://i.scdn.co/image/"
-                        + next(
-                            i["file_id"]
-                            for i in metadata["album"]["cover_group"]["image"]
-                            if i["size"] == "LARGE"
-                        )
-                    )
-                )
-            ],
-            "\xa9cmt": [
-                f'https://open.spotify.com/track/{metadata["canonical_uri"].split(":")[-1]}'
-            ],
-            "cprt": [copyright],
-            "rtng": [1] if "explicit" in metadata else [0],
+            "album": metadata["album"]["name"],
+            "album_artist": self.get_artist(metadata["album"]["artist"]),
+            "artist": self.get_artist(metadata["artist"]),
+            "comment": f'https://open.spotify.com/track/{metadata["canonical_uri"].split(":")[-1]}',
+            "compilation": True if album["album_type"] == "compilation" else None,
+            "copyright": next(
+                (i["text"] for i in album["copyrights"] if i["type"] == "P"), None
+            ),
+            "cover_url": "https://i.scdn.co/image/"
+            + next(
+                i["file_id"]
+                for i in metadata["album"]["cover_group"]["image"]
+                if i["size"] == "LARGE"
+            ),
+            "disc": metadata["disc_number"],
+            "disc_total": album["tracks"]["items"][-1]["disc_number"],
+            "lyrics": unsynced_lyrics,
+            "media_type": 1,
+            "rating": 1 if "explicit" in metadata else 0,
+            "title": metadata["name"],
+            "track": metadata["number"],
+            "track_total": max(
+                i["track_number"]
+                for i in album["tracks"]["items"]
+                if i["disc_number"] == metadata["disc_number"]
+            ),
+            "release_date": self.get_iso_release_date(
+                album["release_date_precision"], album["release_date"]
+            ),
         }
-        if unsynced_lyrics is not None:
-            tags["\xa9lyr"] = [unsynced_lyrics]
+        tags["year"] = tags["release_date"][:4]
         return tags
 
     def get_sanizated_string(self, dirty_string, is_folder):
-        dirty_string = re.sub(r'[\\/:\*\?"<>\|;]', "_", dirty_string)
+        dirty_string = re.sub(r'[\\/:*?"<>|;]', "_", dirty_string)
         if is_folder:
-            dirty_string = dirty_string[:40]
+            dirty_string = dirty_string[: self.truncate]
             if dirty_string.endswith("."):
                 dirty_string = dirty_string[:-1] + "_"
         else:
-            dirty_string = dirty_string[:36]
+            if self.truncate is not None:
+                dirty_string = dirty_string[: self.truncate - 4]
         return dirty_string.strip()
 
     def get_encrypted_location(self, track_id):
@@ -238,21 +268,36 @@ class Dl:
     def get_fixed_location(self, track_id):
         return self.temp_path / f"{track_id}_fixed.m4a"
 
+    def get_cover_location(self, final_location):
+        return final_location.parent / "Cover.jpg"
+
+    def get_lrc_location(self, final_location):
+        return final_location.with_suffix(".lrc")
+
     def get_final_location(self, tags):
-        if tags["disk"][0][1] > 1:
-            file_name = self.get_sanizated_string(
-                f'{tags["disk"][0][0]}-{tags["trkn"][0][0]:02d} {tags["©nam"][0]}',
-                False,
-            )
-        else:
-            file_name = self.get_sanizated_string(
-                f'{tags["trkn"][0][0]:02d} {tags["©nam"][0]}', False
-            )
-        return (
-            self.final_path
-            / self.get_sanizated_string(tags["aART"][0], True)
-            / self.get_sanizated_string(tags["\xa9alb"][0], True)
-            / (file_name + ".m4a")
+        final_location_folder = (
+            self.folder_template_compilation.split("/")
+            if tags["compilation"]
+            else self.folder_template_album.split("/")
+        )
+        final_location_file = (
+            self.file_template_multi_disc.split("/")
+            if tags["disc_total"] > 1
+            else self.file_template_single_disc.split("/")
+        )
+        final_location_folder = [
+            self.get_sanizated_string(i.format(**tags), True)
+            for i in final_location_folder
+        ]
+        final_location_file = [
+            self.get_sanizated_string(i.format(**tags), True)
+            for i in final_location_file[:-1]
+        ] + [
+            self.get_sanizated_string(final_location_file[-1].format(**tags), False)
+            + ".m4a"
+        ]
+        return self.final_path.joinpath(*final_location_folder).joinpath(
+            *final_location_file
         )
 
     def download(self, encrypted_location, stream_url):
@@ -263,7 +308,6 @@ class Dl:
                 "outtmpl": str(encrypted_location),
                 "allow_unplayable_formats": True,
                 "fixup": "never",
-                "overwrites": self.overwrite,
             }
         ) as ydl:
             ydl.download(stream_url)
@@ -288,18 +332,47 @@ class Dl:
             check=True,
         )
 
-    def make_final(self, fixed_location, final_location, tags):
-        file = MP4(fixed_location)
-        file.clear()
-        file.update(tags)
-        file.save()
+    def apply_tags(self, fixed_location, tags):
+        _tags = {
+            v: [tags[k]]
+            for k, v in MP4_TAGS_MAP.items()
+            if k not in self.exclude_tags and tags.get(k) is not None
+        }
+        if not {"track", "track_total"} & set(self.exclude_tags):
+            _tags["trkn"] = [[0, 0]]
+        if not {"disc", "disc_total"} & set(self.exclude_tags):
+            _tags["disk"] = [[0, 0]]
+        if "cover" not in self.exclude_tags:
+            _tags["covr"] = [
+                MP4Cover(
+                    self.get_cover(tags["cover_url"]), imageformat=MP4Cover.FORMAT_JPEG
+                )
+            ]
+        if "track" not in self.exclude_tags:
+            _tags["trkn"][0][0] = tags["track"]
+        if "track_total" not in self.exclude_tags:
+            _tags["trkn"][0][1] = tags["track_total"]
+        if "disc" not in self.exclude_tags:
+            _tags["disk"][0][0] = tags["disc"]
+        if "disc_total" not in self.exclude_tags:
+            _tags["disk"][0][1] = tags["disc_total"]
+        mp4 = MP4(fixed_location)
+        mp4.clear()
+        mp4.update(_tags)
+        mp4.save()
+
+    def move_to_final_location(self, fixed_location, final_location):
+        final_location.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(fixed_location, final_location)
 
-    def make_lrc(self, final_location, synced_lyrics):
-        if synced_lyrics:
-            with open(final_location.with_suffix(".lrc"), "w", encoding="utf8") as f:
-                f.write(synced_lyrics)
+    def save_cover(self, tags, cover_location):
+        with open(cover_location, "wb") as f:
+            f.write(self.get_cover(tags["cover_url"]))
+
+    def make_lrc(self, lrc_location, synced_lyrics):
+        lrc_location.parent.mkdir(parents=True, exist_ok=True)
+        with open(lrc_location, "w", encoding="utf8") as f:
+            f.write(synced_lyrics)
 
     def cleanup(self):
-        if self.temp_path.exists():
-            shutil.rmtree(self.temp_path)
+        shutil.rmtree(self.temp_path)
