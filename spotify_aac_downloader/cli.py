@@ -304,7 +304,7 @@ def main(
             except Exception:
                 error_count += 1
                 logger.error(
-                    f'Failed to download "{track["name"]}" (track {j + 1}/{len(url)} from URL'
+                    f'Failed to download "{track["name"]}" (track {j + 1}/{len(url)} from URL '
                     + f"{i + 1}/{len(download_queue)})",
                     exc_info=print_exceptions,
                 )
