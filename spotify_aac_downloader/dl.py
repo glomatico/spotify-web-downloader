@@ -248,7 +248,7 @@ class Dl:
                 album["release_date_precision"], album["release_date"]
             ),
         }
-        tags["year"] = tags["release_date"][:4]
+        tags["release_year"] = tags["release_date"][:4]
         return tags
 
     def get_sanizated_string(self, dirty_string, is_folder):
