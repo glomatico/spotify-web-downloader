@@ -15,6 +15,57 @@ from yt_dlp import YoutubeDL
 from mutagen.mp4 import MP4, MP4Cover
 
 
+def initialize_sessions(self):
+    cookies_location, wvd_location, lrc_only = self.session_settings
+    if not lrc_only:
+        wvd_location = glob.glob(wvd_location)
+        if not wvd_location:
+            raise Exception('.wvd file not found')
+        self.cdm = Cdm.from_device(Device.load(wvd_location[0]))
+        self.cdm_session = self.cdm.open()
+    cookies = MozillaCookieJar(cookies_location)
+    cookies.load(ignore_discard=True, ignore_expires=True)
+    self.session = requests.Session()
+    self.session.headers.update({
+        'app-platform': 'WebPlayer',
+        'accept': 'application/json',
+        'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,zh-CN;q=0.6,zh;q=0.5,ru;q=0.4,es;q=0.3,ja;q=0.2',
+        'content-type': 'application/json',
+        'origin': 'https://open.spotify.com',
+        'referer': 'https://open.spotify.com/',
+        'sec-ch-ua': '"Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+    })
+    self.session.cookies.update(cookies)
+    web_page = self.session.get('https://open.spotify.com/').text
+    token = re.search(r'accessToken":"(.*?)"', web_page).group(1)
+    self.session.headers.update({
+        'authorization': f'Bearer {token}',
+    })
+    # Create unauthorized basic session to help in some scenarios
+    self.basic_session = requests.Session()
+    self.basic_session.headers.update({
+        'app-platform': 'WebPlayer',
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'accept-language': 'en-CA,en-US;q=0.7,en;q=0.3',
+        'accept-encoding': 'gzip, deflate, br',
+        'dnt': '1',
+        'connection': 'keep-alive',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'cross-site',
+        'sec-gpc': '1',
+        'pragma': 'no-cache',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0',
+        'Upgrade-Insecure-Requests': '1',
+    })
+
+
 class SpotifyAacDownloader:
     def __init__(self, final_path, cookies_location, temp_path, wvd_location, premium_quality, overwrite, lrc_only):
         self.temp_path = Path(temp_path)
@@ -24,53 +75,12 @@ class SpotifyAacDownloader:
             self.audio_quality = 'MP4_256'
         else:
             self.audio_quality = 'MP4_128'
-        if not lrc_only:
-            wvd_location = glob.glob(wvd_location)
-            if not wvd_location:
-                raise Exception('.wvd file not found')
-            self.cdm = Cdm.from_device(Device.load(wvd_location[0]))
-            self.cdm_session = self.cdm.open()
-        cookies = MozillaCookieJar(cookies_location)
-        cookies.load(ignore_discard=True, ignore_expires=True)
-        self.session = requests.Session()
-        self.session.headers.update({
-            'app-platform': 'WebPlayer',
-            'accept': 'application/json',
-            'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,zh-CN;q=0.6,zh;q=0.5,ru;q=0.4,es;q=0.3,ja;q=0.2',
-            'content-type': 'application/json',
-            'origin': 'https://open.spotify.com',
-            'referer': 'https://open.spotify.com/',
-            'sec-ch-ua': '"Not?A_Brand";v="8", "Chromium";v="108", "Google Chrome";v="108"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
-            'sec-fetch-dest': 'empty',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-site': 'same-site',
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-        })
-        self.session.cookies.update(cookies)
-        web_page = self.session.get('https://open.spotify.com/').text
-        token = re.search(r'accessToken":"(.*?)"', web_page).group(1)
-        self.session.headers.update({
-            'authorization': f'Bearer {token}',
-        })
-        # Create unauthorized basic session to help in some scenarios
-        self.basic_session = requests.Session()
-        self.basic_session.headers.update({
-            'app-platform': 'WebPlayer',
-            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'accept-language': 'en-CA,en-US;q=0.7,en;q=0.3',
-            'accept-encoding': 'gzip, deflate, br',
-            'dnt': '1',
-            'connection': 'keep-alive',
-            'sec-fetch-dest': 'document',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'cross-site',
-            'sec-gpc': '1',
-            'pragma': 'no-cache',
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0',
-            'Upgrade-Insecure-Requests': '1',
-        })
+        self.session_settings = {
+            cookies_location: cookies_location,
+            wvd_location: wvd_location,
+            lrc_only: lrc_only,
+        }
+        initialize_sessions(self)
     
 
     def get_download_queue(self, url):
@@ -148,14 +158,18 @@ class SpotifyAacDownloader:
     def get_decryption_key(self, pssh):
         pssh = PSSH(pssh)
         decrypt_attempts = 0
-        while decrypt_attempts < 5:
-            seconds_to_sleep = 60 * decrypt_attempts
-            if seconds_to_sleep > 0:
-                print("Rate limit possibly hit, waiting {} seconds to retry", seconds_to_sleep)
+        while decrypt_attempts < 3:
+            if (decrypt_attempts < 2):
+                seconds_to_sleep = 60 * decrypt_attempts
+                if seconds_to_sleep > 0:
+                    print("Rate limit possibly hit, waiting {} seconds to retry", seconds_to_sleep)
+                else:
+                    # Artificially rate limit it to slow it down and avoid frequently hitting the rate limit
+                    seconds_to_sleep = 1
+                time.sleep(seconds_to_sleep)
             else:
-                # Artificially rate limit it to slow it down and avoid frequently hitting the rate limit
-                seconds_to_sleep = 1
-            time.sleep(seconds_to_sleep)
+                # Re-initialize the download sessions as they must have expired
+                initialize_sessions(self)
 
             challenge = self.cdm.get_license_challenge(self.cdm_session, pssh)
             license = self.session.post(
@@ -217,7 +231,7 @@ class SpotifyAacDownloader:
         album = self.get_album(self.gid_to_uri(metadata['album']['gid']))
         copyright = ''
         try:
-            copyright = next(i['text'] for i in album['copyrights'] if i['type'] == 'P' or i['type'] == 'T')
+            copyright = next(i['text'] for i in album['copyrights'] if i['type'] == 'P' or i['type'] == 'C' or i['type'] == 'T')
         except StopIteration:
             # There was no copyright value found that was equivalent
             print("No copyright value found. Full collection checked was: {}", album['copyrights'])
