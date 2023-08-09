@@ -276,14 +276,14 @@ class Dl:
 
     def get_final_location(self, tags):
         final_location_folder = (
-            self.folder_template_compilation.split("/")
+            self.template_folder_compilation.split("/")
             if tags["compilation"]
-            else self.folder_template_album.split("/")
+            else self.template_folder_album.split("/")
         )
         final_location_file = (
-            self.file_template_multi_disc.split("/")
+            self.template_file_multi_disc.split("/")
             if tags["disc_total"] > 1
-            else self.file_template_single_disc.split("/")
+            else self.template_file_single_disc.split("/")
         )
         final_location_folder = [
             self.get_sanizated_string(i.format(**tags), True)
