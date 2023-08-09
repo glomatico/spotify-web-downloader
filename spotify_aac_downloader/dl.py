@@ -320,7 +320,7 @@ class Dl:
     def fixup(self, decryption_key, encrypted_location, fixed_location):
         subprocess.run(
             [
-                "ffmpeg",
+                self.ffmpeg_location,
                 "-loglevel",
                 "error",
                 "-y",
