@@ -143,10 +143,13 @@ class Dl:
 
     def get_file_id(self, metadata):
         audio_files = metadata.get("file")
-        if audio_files is None and metadata.get("alternative") is not None:
-            audio_files = metadata["alternative"][0]["file"]
-        else:
-            raise Exception("Track not available on Spotify's servers and no alternative found")
+        if audio_files is None:
+            if metadata.get("alternative") is not None:
+                audio_files = metadata["alternative"][0]["file"]
+            else:
+                raise Exception(
+                    "Track not available on Spotify's servers and no alternative found"
+                )
         return next(
             i["file_id"] for i in audio_files if i["format"] == self.audio_quality
         )
