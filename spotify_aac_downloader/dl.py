@@ -268,7 +268,7 @@ class Dl:
         return dirty_string.strip()
 
     def get_encrypted_location(self, track_id):
-        return self.temp_path / f"{track_id}_encrypted.mp4"
+        return self.temp_path / f"{track_id}_encrypted.m4a"
 
     def get_fixed_location(self, track_id):
         return self.temp_path / f"{track_id}_fixed.m4a"
