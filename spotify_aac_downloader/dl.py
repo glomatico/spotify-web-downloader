@@ -333,32 +333,32 @@ class Dl:
         )
 
     def apply_tags(self, fixed_location, tags):
-        _tags = {
+        mp4_tags = {
             v: [tags[k]]
             for k, v in MP4_TAGS_MAP.items()
             if k not in self.exclude_tags and tags.get(k) is not None
         }
         if not {"track", "track_total"} & set(self.exclude_tags):
-            _tags["trkn"] = [[0, 0]]
+            mp4_tags["trkn"] = [[0, 0]]
         if not {"disc", "disc_total"} & set(self.exclude_tags):
-            _tags["disk"] = [[0, 0]]
+            mp4_tags["disk"] = [[0, 0]]
         if "cover" not in self.exclude_tags:
-            _tags["covr"] = [
+            mp4_tags["covr"] = [
                 MP4Cover(
                     self.get_cover(tags["cover_url"]), imageformat=MP4Cover.FORMAT_JPEG
                 )
             ]
         if "track" not in self.exclude_tags:
-            _tags["trkn"][0][0] = tags["track"]
+            mp4_tags["trkn"][0][0] = tags["track"]
         if "track_total" not in self.exclude_tags:
-            _tags["trkn"][0][1] = tags["track_total"]
+            mp4_tags["trkn"][0][1] = tags["track_total"]
         if "disc" not in self.exclude_tags:
-            _tags["disk"][0][0] = tags["disc"]
+            mp4_tags["disk"][0][0] = tags["disc"]
         if "disc_total" not in self.exclude_tags:
-            _tags["disk"][0][1] = tags["disc_total"]
+            mp4_tags["disk"][0][1] = tags["disc_total"]
         mp4 = MP4(fixed_location)
         mp4.clear()
-        mp4.update(_tags)
+        mp4.update(mp4_tags)
         mp4.save()
 
     def move_to_final_location(self, fixed_location, final_location):
