@@ -96,25 +96,25 @@ def no_config_callback(
     help="Config file location.",
 )
 @click.option(
-    "--folder-template-album",
+    "--template-folder-album",
     type=str,
     default="{album_artist}/{album}",
     help="Template of the album folders as a format string.",
 )
 @click.option(
-    "--folder-template-compilation",
+    "--template-folder-compilation",
     type=str,
     default="Compilations/{album}",
     help="Template of the compilation album folders as a format string.",
 )
 @click.option(
-    "--file-template-single-disc",
+    "--template-file-single-disc",
     type=str,
     default="{track:02d} {title}",
     help="Template of the song files for single-disc albums as a format string.",
 )
 @click.option(
-    "--file-template-multi-disc",
+    "--template-file-multi-disc",
     type=str,
     default="{disc}-{track:02d} {title}",
     help="Template of the song files for multi-disc albums as a format string.",
