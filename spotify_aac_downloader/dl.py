@@ -35,10 +35,10 @@ class Dl:
         cookies_location: Path,
         wvd_location: Path,
         ffmpeg_location: Path,
-        folder_template_album: str,
-        folder_template_compilation: str,
-        file_template_single_disc: str,
-        file_template_multi_disc: str,
+        template_folder_album: str,
+        template_folder_compilation: str,
+        template_file_single_disc: str,
+        template_file_multi_disc: str,
         exclude_tags: str,
         truncate: int,
         premium_quality: bool,
@@ -48,10 +48,10 @@ class Dl:
         self.final_path = final_path
         self.temp_path = temp_path
         self.ffmpeg_location = ffmpeg_location
-        self.folder_template_album = folder_template_album
-        self.folder_template_compilation = folder_template_compilation
-        self.file_template_single_disc = file_template_single_disc
-        self.file_template_multi_disc = file_template_multi_disc
+        self.template_folder_album = template_folder_album
+        self.template_folder_compilation = template_folder_compilation
+        self.template_file_single_disc = template_file_single_disc
+        self.template_file_multi_disc = template_file_multi_disc
         self.exclude_tags = (
             [i.lower() for i in exclude_tags.split(",")]
             if exclude_tags is not None
