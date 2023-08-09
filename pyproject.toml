@@ -2,13 +2,8 @@
 name = "spotify-aac-downloader"
 description = "Download songs/albums/playlists directly from Spotify in AAC"
 requires-python = ">=3.7"
-authors = [{name = "glomatico"}]
-dependencies = [
-    "pywidevine",
-    "pyyaml",
-    "pybase62",
-    "yt-dlp"
-]
+authors = [{ name = "glomatico" }]
+dependencies = ["click", "pybase62", "pywidevine", "pyyaml", "yt-dlp"]
 readme = "README.md"
 dynamic = ["version"]
 
@@ -20,4 +15,4 @@ requires = ["flit_core"]
 build-backend = "flit_core.buildapi"
 
 [project.scripts]
-spotify-aac-downloader = "spotify_aac_downloader:main"
+spotify-aac-downloader = "spotify_aac_downloader.cli:main"

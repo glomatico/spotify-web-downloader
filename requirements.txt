@@ -1,4 +1,5 @@
+click
+pybase62
 pywidevine
 pyyaml
-pybase62
 yt-dlp

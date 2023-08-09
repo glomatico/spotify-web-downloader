@@ -7,12 +7,11 @@ A Python script to download songs/albums/playlists directly from Spotify in 256k
     ```
     pip install spotify-aac-downloader
     ```
-3. Add FFMPEG to your PATH. You can get it from here: https://ffmpeg.org/download.html
-    * If you are on Windows you can move the ffmpeg.exe file to the same folder that you will run the script instead of adding it to your PATH.
-4. Export your Spotify cookies as `cookies.txt` to the same folder that you will run the script
+3. Add [FFmpeg](https://ffmpeg.org/download.html) to PATH or specify the location using the command line arguments or the config file (see [Configuration](#configuration))
+4. Place your cookies in the same folder that you will run the script as `cookies.txt`
     * You can export your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
-5. Put your Widevine Device file (.wvd) in the same folder that you will run the script
-    * You can use Dumper to dump your phone's L3 CDM: https://github.com/Diazole/dumper. Once you have the L3 CDM, you can use pywidevine to create the .wvd file from it.
+5. Place your .wvd file in the same folder that you will run the script as `device.wvd`
+    * You can use [dumper](https://github.com/wvdumper/dumper) to dump your phone's L3 CDM. Once you have the L3 CDM, use pywidevine to create the .wvd file from it.
         1. Install pywidevine with pip
             ```
             pip install pywidevine pyyaml
@@ -22,38 +21,48 @@ A Python script to download songs/albums/playlists directly from Spotify in 256k
             pywidevine create-device -t ANDROID -l 3 -k private_key.pem -c client_id.bin -o .
             ```
 
-## Usage
-```
-usage: spotify-aac-downloader [-h] [-u] [-f FINAL_PATH] [-t TEMP_PATH]
-                   [-c COOKIES_LOCATION] [-w WVD_LOCATION] [-n] [-l] [-p] [-o]
-                   [-e] [-v]
-                   [url ...]
+## Configuration
+spotify-aac-downloader can be configured using the command line arguments or the config file. The config file is created automatically when you run spotify-aac-downloader for the first time at `~/.spotify-aac-downloader/config.json` on Linux and `%USERPROFILE%\.spotify-aac-downloader\config.json` on Windows. Config file values can be overridden using command line arguments.
+| Command line argument / Config file key | Description | Default value |
+| --- | --- | --- |
+| `-f,`, `--final-path` / `final_path` | Path where the downloaded files will be saved. | `./Spotify` |
+| `-t,`, `--temp-path` / `temp_path` | Path where the temporary files will be saved. | `./temp` |
+| `-c,`, `--cookies-location` / `cookies_location` | Location of the cookies file. | `./cookies.txt` |
+| `-w,`, `--wvd-location` / `wvd_location` | Location of the .wvd file. | `./device.wvd` |
+| `--ffmpeg-location` / `ffmpeg_location` | Location of the FFmpeg binary. | `ffmpeg` |
+| `--config-location` / - | Location of the config file. | `<home>/.spotify-aac-downloader/config.json` |
+| `--template-folder-album` / `template_folder_album` | Template of the album folders as a format string. | `{album_artist}/{album}` |
+| `--template-folder-compilation` / `template_folder_compilation` | Template of the compilation album folders as a format string. | `Compilations/{album}` |
+| `--template-file-single-disc` / `template_file_single_disc` | Template of the song files for single-disc albums as a format string. | `{track:02d} {title}` |
+| `--template-file-multi-disc` / `template_file_multi_disc` | Template of the song files for multi-disc albums as a format string. | `{disc}-{track:02d} {title}` |
+| `-e,`, `--exclude-tags` / `exclude_tags` | List of tags to exclude from file tagging separated by commas. | `null` |
+| `--truncate` / `truncate` | Maximum length of the file/folder names. | `40` |
+| `-l,`, `--log-level` / `log_level` | Log level. | `INFO` |
+| `-p,`, `--premium-quality` / `premium_quality` | Download in 256kbps AAC instead of 128kbps AAC. | `false` |
+| `-l,`, `--lrc-only` / `lrc_only` | Download only the synced lyrics. | `false` |
+| `-n,`, `--no-lrc` / `no_lrc` | Don't download the synced lyrics. | `false` |
+| `-s,`, `--save-cover` / `save_cover` | Save cover as a separate file. | `false` |
+| `-o,`, `--overwrite` / `overwrite` | Overwrite existing files. | `false` |
+| `--print-exceptions` / `print_exceptions` | Print exceptions. | `false` |
+| `-u,`, `--url-txt` / - | Read URLs as location of text files containing URLs. | `false` |
+| `-n,`, `--no-config-file` / - | Don't use the config file. | `false` |
 
-Download songs/albums/playlists directly from Spotify in AAC
-
-positional arguments:
-  url                   Spotify song/album/playlist URL(s) (default: None)
-
-options:
-  -h, --help            show this help message and exit
-  -u, --urls-txt        Read URLs from a text file (default: False)
-  -f FINAL_PATH, --final-path FINAL_PATH
-                        Final Path (default: ./Spotify)
-  -t TEMP_PATH, --temp-path TEMP_PATH
-                        Temp Path (default: ./temp)
-  -c COOKIES_LOCATION, --cookies-location COOKIES_LOCATION
-                        Cookies location (default: ./cookies.txt)
-  -w WVD_LOCATION, --wvd-location WVD_LOCATION
-                        .wvd file location (ignored if using -l/--lrc-only)
-                        (default: ./*.wvd)
-  -n, --no-lrc          Don't create .lrc files (default: False)
-  -l, --lrc-only        Skip downloading songs and only create .lrc files
-                        (default: False)
-  -p, --premium-quality
-                        Download 256kbps AAC instead of 128kbps AAC (default:
-                        False)
-  -o, --overwrite       Overwrite existing files (default: False)
-  -e, --print-exceptions
-                        Print execeptions (default: False)
-  -v, --version         show program's version number and exit
-```
+### Tag variables
+The following variables can be used in the template folder/file and/or in the `exclude_tags` list:
+- `album`
+- `album_artist`
+- `artist`
+- `comment`
+- `compilation`
+- `copyright`
+- `cover`
+- `disc`
+- `disc_total`
+- `lyrics`
+- `media_type`
+- `rating`
+- `release_date`
+- `release_year`
+- `title`
+- `track`
+- `track_total`
