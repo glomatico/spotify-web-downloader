@@ -17,7 +17,6 @@ MP4_TAGS_MAP = {
     "album_artist": "aART",
     "artist": "\xa9ART",
     "comment": "\xa9cmt",
-    "compilation": "cpil",
     "copyright": "cprt",
     "lyrics": "\xa9lyr",
     "media_type": "stik",
@@ -227,7 +226,7 @@ class Dl:
             "album_artist": self.get_artist(metadata["album"]["artist"]),
             "artist": self.get_artist(metadata["artist"]),
             "comment": f'https://open.spotify.com/track/{metadata["canonical_uri"].split(":")[-1]}',
-            "compilation": True if album["album_type"] == "compilation" else None,
+            "compilation": True if album["album_type"] == "compilation" else False,
             "copyright": next(
                 (i["text"] for i in album["copyrights"] if i["type"] == "P"), None
             ),
@@ -353,6 +352,8 @@ class Dl:
                     self.get_cover(tags["cover_url"]), imageformat=MP4Cover.FORMAT_JPEG
                 )
             ]
+        if "compilation" not in self.exclude_tags:
+            mp4_tags["cpil"] = tags["compilation"]
         if "track" not in self.exclude_tags:
             mp4_tags["trkn"][0][0] = tags["track"]
         if "track_total" not in self.exclude_tags:
