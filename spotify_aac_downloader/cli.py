@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import json
 import logging
-import shutil
 from pathlib import Path
 
 import click
@@ -303,14 +304,15 @@ def main(
                     pass
                 elif final_location.exists() and not overwrite:
                     logger.warning(
-                        f'({current_track}) File already exists at "{final_location}", skipping'
+                        f'({current_track}) Track already exists at "{final_location}", skipping'
                     )
                 else:
                     logger.debug(f"Getting file info")
                     file_id = downloader.get_file_id(metadata)
                     if not file_id:
                         logger.error(
-                            f"({current_track}) Track not available on Spotify's servers and no alternative found, skipping"
+                            f"({current_track}) Track not available on Spotify's "
+                            "servers and no alternative found, skipping"
                         )
                         continue
                     logger.debug(f"Getting PSSH")
@@ -335,14 +337,18 @@ def main(
                 if no_lrc or not lyrics_synced:
                     pass
                 elif lrc_location.exists() and not overwrite:
-                    logger.debug(f'File already exists at "{lrc_location}", skipping')
+                    logger.debug(
+                        f'Synced lyrics already exists at "{lrc_location}", skipping'
+                    )
                 else:
                     logger.debug(f'Saving synced lyrics to "{lrc_location}"')
                     downloader.make_lrc(lrc_location, lyrics_synced)
                 if lrc_only or not save_cover:
                     pass
                 elif cover_location.exists() and not overwrite:
-                    logger.debug(f'File already exists at "{cover_location}", skipping')
+                    logger.debug(
+                        f'Cover already exists at "{cover_location}", skipping'
+                    )
                 else:
                     logger.debug(f'Saving cover to "{cover_location}"')
                     downloader.save_cover(cover_url, cover_location)
