@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import functools
 import re
@@ -22,7 +24,7 @@ class Downloader:
         temp_path: Path,
         cookies_location: Path,
         wvd_location: Path,
-        ffmpeg_location: Path,
+        ffmpeg_location: str,
         template_folder_album: str,
         template_folder_compilation: str,
         template_file_single_disc: str,
@@ -30,12 +32,15 @@ class Downloader:
         exclude_tags: str,
         truncate: int,
         premium_quality: bool,
-        lrc_only: bool,
         **kwargs,
     ):
         self.final_path = final_path
         self.temp_path = temp_path
-        self.ffmpeg_location = ffmpeg_location
+        self.cookies_location = cookies_location
+        self.wvd_location = wvd_location
+        self.ffmpeg_location = (
+            shutil.which(ffmpeg_location) if ffmpeg_location else None
+        )
         self.template_folder_album = template_folder_album
         self.template_folder_compilation = template_folder_compilation
         self.template_file_single_disc = template_file_single_disc
@@ -47,10 +52,9 @@ class Downloader:
         )
         self.truncate = None if truncate < 4 else truncate
         self.audio_quality = "MP4_256" if premium_quality else "MP4_128"
-        if not lrc_only:
-            self.cdm = Cdm.from_device(Device.load(wvd_location))
-            self.cdm_session = self.cdm.open()
-        cookies = MozillaCookieJar(cookies_location)
+
+    def setup_session(self) -> None:
+        cookies = MozillaCookieJar(self.cookies_location)
         cookies.load(ignore_discard=True, ignore_expires=True)
         self.session = requests.Session()
         self.session.headers.update(
@@ -79,7 +83,11 @@ class Downloader:
             }
         )
 
-    def get_download_queue(self, url):
+    def setup_cdm(self) -> None:
+        self.cdm = Cdm.from_device(Device.load(self.wvd_location))
+        self.cdm_session = self.cdm.open()
+
+    def get_download_queue(self, url: str) -> list[dict]:
         uri = url.split("/")[-1].split("?")[0]
         download_queue = []
         if "album" in url:
@@ -94,17 +102,17 @@ class Downloader:
             raise Exception("Not a valid Spotify URL")
         return download_queue
 
-    def uri_to_gid(self, uri):
+    def uri_to_gid(self, uri: str) -> str:
         return hex(base62.decode(uri, base62.CHARSET_INVERTED))[2:].zfill(32)
 
-    def gid_to_uri(self, gid):
+    def gid_to_uri(self, gid: str) -> str:
         return base62.encode(int(gid, 16), charset=base62.CHARSET_INVERTED).zfill(22)
 
-    def get_track(self, track_id):
+    def get_track(self, track_id: str) -> dict:
         return self.session.get(f"https://api.spotify.com/v1/tracks/{track_id}").json()
 
     @functools.lru_cache()
-    def get_album(self, album_id):
+    def get_album(self, album_id: str) -> dict:
         album = self.session.get(f"https://api.spotify.com/v1/albums/{album_id}").json()
         album_next_url = album["tracks"]["next"]
         while album_next_url is not None:
@@ -113,7 +121,7 @@ class Downloader:
             album_next_url = album_next["next"]
         return album
 
-    def get_playlist(self, playlist_id):
+    def get_playlist(self, playlist_id: str) -> dict:
         playlist = self.session.get(
             f"https://api.spotify.com/v1/playlists/{playlist_id}"
         ).json()
@@ -124,12 +132,12 @@ class Downloader:
             playlist_next_url = playlist_next["next"]
         return playlist
 
-    def get_metadata(self, gid):
+    def get_metadata(self, gid: str) -> dict:
         return self.session.get(
             f"https://spclient.wg.spotify.com/metadata/4/track/{gid}?market=from_token"
         ).json()
 
-    def get_file_id(self, metadata):
+    def get_file_id(self, metadata: dict) -> str:
         audio_files = metadata.get("file")
         if audio_files is None:
             if metadata.get("alternative") is not None:
@@ -142,12 +150,12 @@ class Downloader:
             i["file_id"] for i in audio_files if i["format"] == self.audio_quality
         )
 
-    def get_pssh(self, file_id):
+    def get_pssh(self, file_id: str) -> str:
         return self.session.get(
             f"https://seektables.scdn.co/seektable/{file_id}.json"
         ).json()["pssh"]
 
-    def get_decryption_key(self, pssh):
+    def get_decryption_key(self, pssh: str) -> str:
         pssh = PSSH(pssh)
         challenge = self.cdm.get_license_challenge(self.cdm_session, pssh)
         license = self.session.post(
@@ -159,13 +167,13 @@ class Downloader:
             i for i in self.cdm.get_keys(self.cdm_session) if i.type == "CONTENT"
         ).key.hex()
 
-    def get_stream_url(self, file_id):
+    def get_stream_url(self, file_id: str) -> str:
         return self.session.get(
             "https://gue1-spclient.spotify.com/storage-resolve/v2/files/audio/interactive/11/"
             + f"{file_id}?version=10000000&product=9&platform=39&alt=json",
         ).json()["cdnurl"][0]
 
-    def get_artist(self, artist_list):
+    def get_artist(self, artist_list: list[dict]) -> str:
         if len(artist_list) == 1:
             return artist_list[0]["name"]
         return (
@@ -173,30 +181,32 @@ class Downloader:
             + f' & {artist_list[-1]["name"]}'
         )
 
-    def get_synced_lyrics_formated_time(self, time):
-        formated_time = datetime.datetime.fromtimestamp(time / 1000.0)
-        return formated_time.strftime("%M:%S.%f")[:-4]
+    def get_lyrics_synced_formatted_time(self, time: int) -> str:
+        formatted_time = datetime.datetime.fromtimestamp(time / 1000.0)
+        return formatted_time.strftime("%M:%S.%f")[:-4]
 
-    def get_lyrics(self, track_id):
+    def get_lyrics(self, track_id: str) -> tuple[str, str]:
         try:
             raw_lyrics = self.session.get(
                 f"https://spclient.wg.spotify.com/color-lyrics/v2/track/{track_id}"
             ).json()["lyrics"]
         except:
             return None, None
-        synced_lyrics = ""
-        unsynced_lyrics = ""
+        lyrics_synced = ""
+        lyrics_unsynced = ""
         for line in raw_lyrics["lines"]:
             if raw_lyrics["syncType"] == "LINE_SYNCED":
-                synced_lyrics += f'[{self.get_synced_lyrics_formated_time(int(line["startTimeMs"]))}]{line["words"]}\n'
-            unsynced_lyrics += f'{line["words"]}\n'
-        return unsynced_lyrics[:-1], synced_lyrics
+                lyrics_synced += f'[{self.get_lyrics_synced_formatted_time(int(line["startTimeMs"]))}]{line["words"]}\n'
+            lyrics_unsynced += f'{line["words"]}\n'
+        return lyrics_unsynced[:-1], lyrics_synced
 
     @functools.lru_cache()
-    def get_cover(self, url):
+    def get_cover(self, url: str) -> bytes:
         return requests.get(url).content
 
-    def get_iso_release_date(self, release_date_precision, release_date):
+    def get_iso_release_date(
+        self, release_date_precision: str, release_date: str
+    ) -> str:
         if release_date_precision == "year":
             datetime_template = "%Y"
         elif release_date_precision == "month":
@@ -208,7 +218,7 @@ class Downloader:
             + "Z"
         )
 
-    def get_tags(self, metadata, unsynced_lyrics):
+    def get_tags(self, metadata: dict, lyrics_unsynced: str) -> dict:
         album = self.get_album(self.gid_to_uri(metadata["album"]["gid"]))
         tags = {
             "album": metadata["album"]["name"],
@@ -227,7 +237,7 @@ class Downloader:
             ),
             "disc": metadata["disc_number"],
             "disc_total": album["tracks"]["items"][-1]["disc_number"],
-            "lyrics": unsynced_lyrics,
+            "lyrics": lyrics_unsynced,
             "media_type": 1,
             "rating": 1 if "explicit" in metadata else 0,
             "title": metadata["name"],
@@ -244,7 +254,7 @@ class Downloader:
         tags["release_year"] = tags["release_date"][:4]
         return tags
 
-    def get_sanizated_string(self, dirty_string, is_folder):
+    def get_sanizated_string(self, dirty_string: str, is_folder: bool) -> str:
         dirty_string = re.sub(r'[\\/:*?"<>|;]', "_", dirty_string)
         if is_folder:
             dirty_string = dirty_string[: self.truncate]
@@ -255,19 +265,19 @@ class Downloader:
                 dirty_string = dirty_string[: self.truncate - 4]
         return dirty_string.strip()
 
-    def get_encrypted_location(self, track_id):
+    def get_encrypted_location(self, track_id: str) -> Path:
         return self.temp_path / f"{track_id}_encrypted.m4a"
 
-    def get_fixed_location(self, track_id):
+    def get_fixed_location(self, track_id: str) -> Path:
         return self.temp_path / f"{track_id}_fixed.m4a"
 
-    def get_cover_location(self, final_location):
+    def get_cover_location(self, final_location: Path) -> Path:
         return final_location.parent / "Cover.jpg"
 
-    def get_lrc_location(self, final_location):
+    def get_lrc_location(self, final_location: Path) -> Path:
         return final_location.with_suffix(".lrc")
 
-    def get_final_location(self, tags):
+    def get_final_location(self, tags: dict) -> Path:
         final_location_folder = (
             self.template_folder_compilation.split("/")
             if tags["compilation"]
@@ -293,7 +303,7 @@ class Downloader:
             *final_location_file
         )
 
-    def download(self, encrypted_location, stream_url):
+    def download(self, encrypted_location: Path, stream_url: str) -> None:
         with YoutubeDL(
             {
                 "quiet": True,
@@ -305,7 +315,9 @@ class Downloader:
         ) as ydl:
             ydl.download(stream_url)
 
-    def fixup(self, decryption_key, encrypted_location, fixed_location):
+    def fixup(
+        self, decryption_key: str, encrypted_location: Path, fixed_location: Path
+    ) -> None:
         subprocess.run(
             [
                 "ffmpeg",
@@ -325,7 +337,7 @@ class Downloader:
             check=True,
         )
 
-    def apply_tags(self, fixed_location, tags):
+    def apply_tags(self, fixed_location: Path, tags: dict) -> None:
         mp4_tags = {
             v: [tags[k]]
             for k, v in MP4_TAGS_MAP.items()
@@ -354,18 +366,18 @@ class Downloader:
         mp4.update(mp4_tags)
         mp4.save()
 
-    def move_to_final_location(self, fixed_location, final_location):
+    def move_to_final_location(self, fixed_location: Path, final_location: Path):
         final_location.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(fixed_location, final_location)
 
-    def save_cover(self, tags, cover_location):
+    def save_cover(self, tags: dict, cover_location: Path):
         with open(cover_location, "wb") as f:
             f.write(self.get_cover(tags["cover_url"]))
 
-    def make_lrc(self, lrc_location, synced_lyrics):
+    def make_lrc(self, lrc_location: Path, lyrics_unsynced: str):
         lrc_location.parent.mkdir(parents=True, exist_ok=True)
         with open(lrc_location, "w", encoding="utf8") as f:
-            f.write(synced_lyrics)
+            f.write(lyrics_unsynced)
 
-    def cleanup(self):
+    def cleanup_temp(self) -> None:
         shutil.rmtree(self.temp_path)
