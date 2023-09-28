@@ -338,7 +338,7 @@ class Downloader:
             check=True,
         )
 
-    def apply_tags(self, fixed_location: Path, tags: dict) -> None:
+    def apply_tags(self, fixed_location: Path, tags: dict, cover_url: str) -> None:
         mp4_tags = {
             v: [tags[k]]
             for k, v in MP4_TAGS_MAP.items()
@@ -350,9 +350,7 @@ class Downloader:
             mp4_tags["disk"] = [[0, 0]]
         if "cover" not in self.exclude_tags:
             mp4_tags["covr"] = [
-                MP4Cover(
-                    self.get_cover(tags["cover_url"]), imageformat=MP4Cover.FORMAT_JPEG
-                )
+                MP4Cover(self.get_cover(cover_url), imageformat=MP4Cover.FORMAT_JPEG)
             ]
         if "track" not in self.exclude_tags:
             mp4_tags["trkn"][0][0] = tags["track"]
