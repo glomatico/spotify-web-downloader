@@ -218,6 +218,13 @@ class Downloader:
             + "Z"
         )
 
+    def get_cover_url(self, metadata: dict) -> str:
+        return "https://i.scdn.co/image/" + next(
+            i["file_id"]
+            for i in metadata["album"]["cover_group"]["image"]
+            if i["size"] == "LARGE"
+        )
+
     def get_tags(self, metadata: dict, lyrics_unsynced: str) -> dict:
         album = self.get_album(self.gid_to_uri(metadata["album"]["gid"]))
         tags = {
@@ -228,12 +235,6 @@ class Downloader:
             "compilation": True if album["album_type"] == "compilation" else None,
             "copyright": next(
                 (i["text"] for i in album["copyrights"] if i["type"] == "P"), None
-            ),
-            "cover_url": "https://i.scdn.co/image/"
-            + next(
-                i["file_id"]
-                for i in metadata["album"]["cover_group"]["image"]
-                if i["size"] == "LARGE"
             ),
             "disc": metadata["disc_number"],
             "disc_total": album["tracks"]["items"][-1]["disc_number"],
@@ -370,9 +371,10 @@ class Downloader:
         final_location.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(fixed_location, final_location)
 
-    def save_cover(self, tags: dict, cover_location: Path):
+    @functools.lru_cache()
+    def save_cover(self, cover_url: str, cover_location: Path):
         with open(cover_location, "wb") as f:
-            f.write(self.get_cover(tags["cover_url"]))
+            f.write(self.get_cover(cover_url))
 
     def make_lrc(self, lrc_location: Path, lyrics_unsynced: str):
         lrc_location.parent.mkdir(parents=True, exist_ok=True)
