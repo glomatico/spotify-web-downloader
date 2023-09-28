@@ -85,16 +85,22 @@ def no_config_callback(
     help="Location of the .wvd file.",
 )
 @click.option(
+    "--config-location",
+    type=Path,
+    default=Path.home() / ".spotify-aac-downloader" / "config.json",
+    help="Location of the config file.",
+)
+@click.option(
     "--ffmpeg-location",
     type=str,
     default="ffmpeg",
     help="Location of the FFmpeg binary.",
 )
 @click.option(
-    "--config-location",
-    type=Path,
-    default=Path.home() / ".spotify-aac-downloader" / "config.json",
-    help="Location of the config file.",
+    "--aria2c-location",
+    type=str,
+    default="aria2c",
+    help="Location of the aria2c binary.",
 )
 @click.option(
     "--template-folder-album",
@@ -119,6 +125,12 @@ def no_config_callback(
     type=str,
     default="{disc}-{track:02d} {title}",
     help="Template of the song files for multi-disc albums as a format string.",
+)
+@click.option(
+    "--download-mode",
+    type=click.Choice(["native", "aria2c"]),
+    default="native",
+    help="Download mode.",
 )
 @click.option(
     "--exclude-tags",
@@ -196,12 +208,14 @@ def main(
     temp_path: Path,
     cookies_location: Path,
     wvd_location: Path,
-    ffmpeg_location: str,
     config_location: Path,
+    ffmpeg_location: str,
+    aria2c_location: str,
     template_folder_album: str,
     template_folder_compilation: str,
     template_file_single_disc: str,
     template_file_multi_disc: str,
+    download_mode: str,
     exclude_tags: str,
     truncate: int,
     log_level: str,
@@ -224,6 +238,9 @@ def main(
     downloader = Downloader(**locals())
     if not downloader.ffmpeg_location:
         logger.critical(X_NOT_FOUND_STR.format("FFmpeg", ffmpeg_location))
+        return
+    if download_mode == "aria2c" and not downloader.aria2c_location:
+        logger.critical(X_NOT_FOUND_STR.format("aria2c", aria2c_location))
         return
     if cookies_location is not None and not cookies_location.exists():
         logger.critical(X_NOT_FOUND_STR.format("Cookies", cookies_location))
@@ -304,7 +321,10 @@ def main(
                     stream_url = downloader.get_stream_url(file_id)
                     encrypted_location = downloader.get_encrypted_location(track_id)
                     logger.debug(f'Downloading to "{encrypted_location}"')
-                    downloader.download(encrypted_location, stream_url)
+                    if download_mode == "native":
+                        downloader.download_native(encrypted_location, stream_url)
+                    if download_mode == "aria2c":
+                        downloader.download_aria2c(encrypted_location, stream_url)
                     fixed_location = downloader.get_fixed_location(track_id)
                     logger.debug(f'Remuxing to "{fixed_location}"')
                     downloader.fixup(decryption_key, encrypted_location, fixed_location)

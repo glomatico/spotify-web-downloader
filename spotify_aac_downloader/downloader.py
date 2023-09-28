@@ -10,9 +10,9 @@ from pathlib import Path
 
 import base62
 import requests
+import tqdm
 from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
 from pywidevine import PSSH, Cdm, Device
-from yt_dlp import YoutubeDL
 
 from .constants import *
 
@@ -25,6 +25,7 @@ class Downloader:
         cookies_location: Path,
         wvd_location: Path,
         ffmpeg_location: str,
+        aria2c_location: str,
         template_folder_album: str,
         template_folder_compilation: str,
         template_file_single_disc: str,
@@ -41,6 +42,7 @@ class Downloader:
         self.ffmpeg_location = (
             shutil.which(ffmpeg_location) if ffmpeg_location else None
         )
+        self.aria2c_location = shutil.which("aria2c") if aria2c_location else None
         self.template_folder_album = template_folder_album
         self.template_folder_compilation = template_folder_compilation
         self.template_file_single_disc = template_file_single_disc
@@ -306,17 +308,39 @@ class Downloader:
             *final_location_file
         )
 
-    def download(self, encrypted_location: Path, stream_url: str) -> None:
-        with YoutubeDL(
-            {
-                "quiet": True,
-                "no_warnings": True,
-                "outtmpl": str(encrypted_location),
-                "allow_unplayable_formats": True,
-                "fixup": "never",
-            }
-        ) as ydl:
-            ydl.download(stream_url)
+    def download_native(self, encrypted_location: Path, stream_url: str) -> None:
+        chunk_size = 1024
+        streaming_response = self.session.get(stream_url, stream=True)
+        encrypted_location.parent.mkdir(parents=True, exist_ok=True)
+        with open(encrypted_location, "wb") as file, tqdm.tqdm(
+            total=int(streaming_response.headers.get("content-length", 0)),
+            unit="B",
+            unit_scale=True,
+            unit_divisor=chunk_size,
+            leave=False,
+        ) as bar:
+            for chunk in streaming_response.iter_content(chunk_size):
+                if chunk:
+                    file.write(chunk)
+                    bar.update(len(chunk))
+
+    def download_aria2c(self, encrypted_location: Path, stream_url: str) -> None:
+        encrypted_location.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            [
+                self.aria2c_location,
+                "--no-conf",
+                "--download-result=hide",
+                "--console-log-level=error",
+                "--summary-interval=0",
+                "--file-allocation=none",
+                stream_url,
+                "--out",
+                encrypted_location,
+            ],
+            check=True,
+        )
+        print("\r", end="")
 
     def fixup(
         self, decryption_key: str, encrypted_location: Path, fixed_location: Path

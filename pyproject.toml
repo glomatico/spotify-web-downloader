@@ -3,7 +3,7 @@ name = "spotify-aac-downloader"
 description = "Download songs/albums/playlists directly from Spotify in AAC"
 requires-python = ">=3.7"
 authors = [{ name = "glomatico" }]
-dependencies = ["click", "pybase62", "pywidevine", "pyyaml", "yt-dlp"]
+dependencies = ["click", "pybase62", "pywidevine", "pyyaml", "tqdm"]
 readme = "README.md"
 dynamic = ["version"]
 
