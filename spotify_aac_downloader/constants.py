@@ -11,3 +11,5 @@ MP4_TAGS_MAP = {
     "release_date": "\xa9day",
     "title": "\xa9nam",
 }
+
+X_NOT_FOUND_STR = "{} not found at {}"

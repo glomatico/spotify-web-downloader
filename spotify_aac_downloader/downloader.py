@@ -10,7 +10,7 @@ from pathlib import Path
 
 import base62
 import requests
-from mutagen.mp4 import MP4, MP4Cover
+from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
 from pywidevine import PSSH, Cdm, Device
 from yt_dlp import YoutubeDL
 
@@ -75,8 +75,9 @@ class Downloader:
             }
         )
         self.session.cookies.update(cookies)
-        web_page = self.session.get("https://open.spotify.com/").text
-        token = re.search(r'accessToken":"(.*?)"', web_page).group(1)
+        home_page = self.session.get("https://open.spotify.com/").text
+        token = re.search(r'accessToken":"(.*?)"', home_page).group(1)
+        self.is_premium = re.search(r'isPremium":(.*?),', home_page).group(1)
         self.session.headers.update(
             {
                 "authorization": f"Bearer {token}",
@@ -143,9 +144,7 @@ class Downloader:
             if metadata.get("alternative") is not None:
                 audio_files = metadata["alternative"][0]["file"]
             else:
-                raise Exception(
-                    "Track not available on Spotify's servers and no alternative found"
-                )
+                return None
         return next(
             i["file_id"] for i in audio_files if i["format"] == self.audio_quality
         )
@@ -227,6 +226,7 @@ class Downloader:
 
     def get_tags(self, metadata: dict, lyrics_unsynced: str) -> dict:
         album = self.get_album(self.gid_to_uri(metadata["album"]["gid"]))
+        isrc = next((i for i in metadata["external_id"] if i["type"] == "isrc"), None)
         tags = {
             "album": metadata["album"]["name"],
             "album_artist": self.get_artist(metadata["album"]["artist"]),
@@ -238,6 +238,8 @@ class Downloader:
             ),
             "disc": metadata["disc_number"],
             "disc_total": album["tracks"]["items"][-1]["disc_number"],
+            "isrc": isrc.get("id") if isrc is not None else None,
+            "label": metadata["album"].get("label"),
             "lyrics": lyrics_unsynced,
             "media_type": 1,
             "rating": 1 if "explicit" in metadata else 0,
@@ -352,6 +354,14 @@ class Downloader:
             mp4_tags["covr"] = [
                 MP4Cover(self.get_cover(cover_url), imageformat=MP4Cover.FORMAT_JPEG)
             ]
+        if "isrc" not in self.exclude_tags and tags.get("isrc") is not None:
+            mp4_tags["----:com.apple.iTunes:ISRC"] = [
+                MP4FreeForm(tags["isrc"].encode("utf-8"))
+            ]
+        if "label" not in self.exclude_tags and tags.get("label") is not None:
+            mp4_tags["----:com.apple.iTunes:LABEL"] = [
+                MP4FreeForm(tags["label"].encode("utf-8"))
+            ]
         if "track" not in self.exclude_tags:
             mp4_tags["trkn"][0][0] = tags["track"]
         if "track_total" not in self.exclude_tags:
@@ -370,7 +380,7 @@ class Downloader:
         shutil.move(fixed_location, final_location)
 
     @functools.lru_cache()
-    def save_cover(self, cover_url: str, cover_location: Path):
+    def save_cover(self, cover_location: Path, cover_url: str):
         with open(cover_location, "wb") as f:
             f.write(self.get_cover(cover_url))
 
