@@ -6,7 +6,7 @@ from pathlib import Path
 import click
 
 from . import __version__
-from .dl import Dl
+from .downloader import Downloader
 
 EXCLUDED_PARAMS = (
     "urls",
@@ -236,12 +236,12 @@ def main(
                 _urls.extend(f.read().splitlines())
         urls = tuple(_urls)
     logger.debug("Starting downloader")
-    dl = Dl(**locals())
+    downloader = Downloader(**locals())
     download_queue = []
     for i, url in enumerate(urls):
         try:
             logger.debug(f'Checking "{url}" (URL {i + 1}/{len(urls)})')
-            download_queue.append(dl.get_download_queue(url))
+            download_queue.append(downloader.get_download_queue(url))
         except Exception:
             logger.error(
                 f"Failed to check URL {i + 1}/{len(urls)}", exc_info=print_exceptions
@@ -255,50 +255,50 @@ def main(
             try:
                 track_id = track["id"]
                 logger.debug(f'Getting metadata for "{track_id}"')
-                gid = dl.uri_to_gid(track_id)
-                metadata = dl.get_metadata(gid)
+                gid = downloader.uri_to_gid(track_id)
+                metadata = downloader.get_metadata(gid)
                 logger.debug("Getting lyrics")
-                unsynced_lyrics, synced_lyrics = dl.get_lyrics(track_id)
+                unsynced_lyrics, synced_lyrics = downloader.get_lyrics(track_id)
                 if not unsynced_lyrics:
                     logger.debug("No unsynced lyrics found")
                 if not synced_lyrics:
                     logger.debug("No synced lyrics found")
-                tags = dl.get_tags(metadata, unsynced_lyrics)
-                final_location = dl.get_final_location(tags)
+                tags = downloader.get_tags(metadata, unsynced_lyrics)
+                final_location = downloader.get_final_location(tags)
                 if not lrc_only:
                     if overwrite or not final_location.exists():
                         logger.debug("Getting file info")
-                        file_id = dl.get_file_id(metadata)
+                        file_id = downloader.get_file_id(metadata)
                         logger.debug("Getting PSSH")
-                        pssh = dl.get_pssh(file_id)
+                        pssh = downloader.get_pssh(file_id)
                         logger.debug("Getting decryption key")
-                        decryption_key = dl.get_decryption_key(pssh)
+                        decryption_key = downloader.get_decryption_key(pssh)
                         logger.debug("Getting stream URL")
-                        stream_url = dl.get_stream_url(file_id)
-                        encrypted_location = dl.get_encrypted_location(track_id)
+                        stream_url = downloader.get_stream_url(file_id)
+                        encrypted_location = downloader.get_encrypted_location(track_id)
                         logger.debug(f'Downloading to "{encrypted_location}"')
-                        dl.download(encrypted_location, stream_url)
-                        fixed_location = dl.get_fixed_location(track_id)
+                        downloader.download(encrypted_location, stream_url)
+                        fixed_location = downloader.get_fixed_location(track_id)
                         logger.debug(f'Remuxing to "{fixed_location}"')
-                        dl.fixup(decryption_key, encrypted_location, fixed_location)
+                        downloader.fixup(decryption_key, encrypted_location, fixed_location)
                         logger.debug("Applying tags")
-                        dl.apply_tags(fixed_location, tags)
+                        downloader.apply_tags(fixed_location, tags)
                         logger.debug(f'Moving to "{final_location}"')
-                        dl.move_to_final_location(fixed_location, final_location)
+                        downloader.move_to_final_location(fixed_location, final_location)
                     else:
                         logger.warning(f'"{final_location}" already exists, skipping')
                 if synced_lyrics and not no_lrc:
-                    lrc_location = dl.get_lrc_location(final_location)
+                    lrc_location = downloader.get_lrc_location(final_location)
                     if overwrite or not lrc_location.exists():
                         logger.debug(f'Saving synced lyrics to "{lrc_location}"')
-                        dl.make_lrc(lrc_location, synced_lyrics)
+                        downloader.make_lrc(lrc_location, synced_lyrics)
                     else:
                         logger.warning(f'"{lrc_location}" already exists, skipping')
                 if save_cover and not lrc_only:
-                    cover_location = dl.get_cover_location(final_location)
+                    cover_location = downloader.get_cover_location(final_location)
                     if overwrite or not cover_location.exists():
                         logger.debug(f'Saving cover to "{cover_location}"')
-                        dl.save_cover(tags, cover_location)
+                        downloader.save_cover(tags, cover_location)
                     else:
                         logger.warning(f'"{cover_location}" already exists, skipping')
             except Exception:
@@ -311,5 +311,5 @@ def main(
             finally:
                 if temp_path.exists():
                     logger.debug(f'Cleaning up "{temp_path}"')
-                    dl.cleanup()
+                    downloader.cleanup()
     logger.info(f"Done ({error_count} error(s))")

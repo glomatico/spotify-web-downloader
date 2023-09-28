@@ -27,7 +27,7 @@ MP4_TAGS_MAP = {
 }
 
 
-class Dl:
+class Downloader:
     def __init__(
         self,
         final_path: Path,
