@@ -351,7 +351,7 @@ def main(
                     )
                 else:
                     logger.debug(f'Saving cover to "{cover_location}"')
-                    downloader.save_cover(cover_url, cover_location)
+                    downloader.save_cover(cover_location, cover_url)
             except Exception:
                 error_count += 1
                 logger.error(
