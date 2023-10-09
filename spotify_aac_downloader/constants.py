@@ -3,7 +3,6 @@ MP4_TAGS_MAP = {
     "album_artist": "aART",
     "artist": "\xa9ART",
     "comment": "\xa9cmt",
-    "compilation": "cpil",
     "copyright": "cprt",
     "lyrics": "\xa9lyr",
     "media_type": "stik",

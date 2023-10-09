@@ -234,7 +234,7 @@ class Downloader:
             "album_artist": self.get_artist(metadata["album"]["artist"]),
             "artist": self.get_artist(metadata["artist"]),
             "comment": f'https://open.spotify.com/track/{metadata["canonical_uri"].split(":")[-1]}',
-            "compilation": True if album["album_type"] == "compilation" else None,
+            "compilation": True if album["album_type"] == "compilation" else False,
             "copyright": next(
                 (i["text"] for i in album["copyrights"] if i["type"] == "P"), None
             ),
@@ -345,7 +345,7 @@ class Downloader:
     ) -> None:
         subprocess.run(
             [
-                "ffmpeg",
+                self.ffmpeg_location,
                 "-loglevel",
                 "error",
                 "-y",
@@ -372,6 +372,8 @@ class Downloader:
             mp4_tags["trkn"] = [[0, 0]]
         if not {"disc", "disc_total"} & set(self.exclude_tags):
             mp4_tags["disk"] = [[0, 0]]
+        if "compilation" not in self.exclude_tags:
+            mp4_tags["cpil"] = tags["compilation"]
         if "cover" not in self.exclude_tags:
             mp4_tags["covr"] = [
                 MP4Cover(self.get_cover(cover_url), imageformat=MP4Cover.FORMAT_JPEG)
