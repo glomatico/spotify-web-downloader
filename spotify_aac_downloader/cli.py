@@ -338,7 +338,7 @@ def main(
                     )
                 else:
                     logger.debug(f'Saving synced lyrics to "{lrc_location}"')
-                    downloader.make_lrc(lrc_location, lyrics_synced)
+                    downloader.save_lrc(lrc_location, lyrics_synced)
                 if lrc_only or not save_cover:
                     pass
                 elif cover_location.exists() and not overwrite:
