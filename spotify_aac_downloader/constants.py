@@ -11,4 +11,4 @@ MP4_TAGS_MAP = {
     "title": "\xa9nam",
 }
 
-X_NOT_FOUND_STR = "{} not found at {}"
+X_NOT_FOUND_STRING = "{} not found at {}"

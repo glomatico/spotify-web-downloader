@@ -238,16 +238,16 @@ def main(
     logger.debug("Setting downloader")
     downloader = Downloader(**locals())
     if not downloader.ffmpeg_location:
-        logger.critical(X_NOT_FOUND_STR.format("FFmpeg", ffmpeg_location))
+        logger.critical(X_NOT_FOUND_STRING.format("FFmpeg", ffmpeg_location))
         return
     if download_mode == "aria2c" and not downloader.aria2c_location:
-        logger.critical(X_NOT_FOUND_STR.format("aria2c", aria2c_location))
+        logger.critical(X_NOT_FOUND_STRING.format("aria2c", aria2c_location))
         return
     if cookies_location is not None and not cookies_location.exists():
-        logger.critical(X_NOT_FOUND_STR.format("Cookies", cookies_location))
+        logger.critical(X_NOT_FOUND_STRING.format("Cookies", cookies_location))
         return
     if not wvd_location.exists() and not lrc_only:
-        logger.critical(X_NOT_FOUND_STR.format(".wvd file", wvd_location))
+        logger.critical(X_NOT_FOUND_STRING.format(".wvd file", wvd_location))
         return
     if url_txt:
         logger.debug("Reading URLs from text files")
@@ -258,7 +258,7 @@ def main(
         urls = tuple(_urls)
     if not lrc_only:
         if not wvd_location.exists():
-            logger.critical(X_NOT_FOUND_STR.format(".wvd file", wvd_location))
+            logger.critical(X_NOT_FOUND_STRING.format(".wvd file", wvd_location))
             return
         logger.debug("Setting up CDM")
         downloader.setup_cdm()
