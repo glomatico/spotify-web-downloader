@@ -309,20 +309,18 @@ class Downloader:
         )
 
     def download_native(self, encrypted_location: Path, stream_url: str) -> None:
-        chunk_size = 1024
-        streaming_response = self.session.get(stream_url, stream=True)
+        chunk_size = 8192
         encrypted_location.parent.mkdir(parents=True, exist_ok=True)
-        with open(encrypted_location, "wb") as file, tqdm.tqdm(
-            total=int(streaming_response.headers.get("content-length", 0)),
+        with self.session.get(stream_url, stream=True) as streaming, tqdm.tqdm(
+            total=int(streaming.headers["Content-Length"]),
             unit="B",
             unit_scale=True,
-            unit_divisor=chunk_size,
+            unit_divisor=1024,
             leave=False,
-        ) as bar:
-            for chunk in streaming_response.iter_content(chunk_size):
-                if chunk:
-                    file.write(chunk)
-                    bar.update(len(chunk))
+        ) as progress_bar, open(encrypted_location, "wb") as f:
+            for chunk in streaming.iter_content(chunk_size):
+                f.write(chunk)
+                progress_bar.update(chunk_size)
 
     def download_aria2c(self, encrypted_location: Path, stream_url: str) -> None:
         encrypted_location.parent.mkdir(parents=True, exist_ok=True)
