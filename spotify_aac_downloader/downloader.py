@@ -183,8 +183,8 @@ class Downloader:
         )
 
     def get_lyrics_synced_lrc_timestamp(self, time: int) -> str:
-        formatted_time = datetime.datetime.fromtimestamp(time / 1000.0)
-        return formatted_time.strftime("%M:%S.%f")[:-4]
+        lrc_timestamp = datetime.datetime.fromtimestamp(time / 1000.0)
+        return lrc_timestamp.strftime("%M:%S.%f")[:-4]
 
     def get_lyrics(self, track_id: str, has_lyrics: bool) -> tuple[str, str]:
         if not has_lyrics:
