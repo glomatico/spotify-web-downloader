@@ -186,13 +186,12 @@ class Downloader:
         formatted_time = datetime.datetime.fromtimestamp(time / 1000.0)
         return formatted_time.strftime("%M:%S.%f")[:-4]
 
-    def get_lyrics(self, track_id: str) -> tuple[str, str]:
-        try:
-            raw_lyrics = self.session.get(
-                f"https://spclient.wg.spotify.com/color-lyrics/v2/track/{track_id}"
-            ).json()["lyrics"]
-        except:
+    def get_lyrics(self, track_id: str, has_lyrics: bool) -> tuple[str, str]:
+        if not has_lyrics:
             return None, None
+        raw_lyrics = self.session.get(
+            f"https://spclient.wg.spotify.com/color-lyrics/v2/track/{track_id}"
+        ).json()["lyrics"]
         lyrics_synced = ""
         lyrics_unsynced = ""
         for line in raw_lyrics["lines"]:
