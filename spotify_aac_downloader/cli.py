@@ -235,7 +235,7 @@ def main(
     )
     logger = logging.getLogger(__name__)
     logger.setLevel(log_level)
-    logger.debug("Setting downloader")
+    logger.debug("Starting downloader")
     downloader = Downloader(**locals())
     if not downloader.ffmpeg_location:
         logger.critical(X_NOT_FOUND_STRING.format("FFmpeg", ffmpeg_location))
