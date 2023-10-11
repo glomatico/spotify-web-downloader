@@ -359,5 +359,5 @@ def main(
             finally:
                 if temp_path.exists():
                     logger.debug(f'Cleaning up "{temp_path}"')
-                    downloader.cleanup_temp()
+                    downloader.cleanup_temp_path()
     logger.info(f"Done ({error_count} error(s))")
