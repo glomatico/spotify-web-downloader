@@ -42,7 +42,9 @@ class Downloader:
         self.ffmpeg_location = (
             shutil.which(ffmpeg_location) if ffmpeg_location else None
         )
-        self.aria2c_location = shutil.which("aria2c") if aria2c_location else None
+        self.aria2c_location = (
+            shutil.which(aria2c_location) if aria2c_location else None
+        )
         self.template_folder_album = template_folder_album
         self.template_folder_compilation = template_folder_compilation
         self.template_file_single_disc = template_file_single_disc
