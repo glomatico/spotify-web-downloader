@@ -286,11 +286,11 @@ def main(
             try:
                 logger.info(f'({current_track}) Downloading "{track["name"]}"')
                 track_id = track["id"]
-                logger.debug(f"Getting metadata")
+                logger.debug("Getting metadata")
                 gid = downloader.uri_to_gid(track_id)
                 metadata = downloader.get_metadata(gid)
                 if metadata.get("has_lyrics"):
-                    logger.debug(f"Getting lyrics")
+                    logger.debug("Getting lyrics")
                     lyrics_unsynced, lyrics_synced = downloader.get_lyrics(track_id)
                 else:
                     lyrics_unsynced, lyrics_synced = None, None
@@ -306,7 +306,7 @@ def main(
                         f'({current_track}) Track already exists at "{final_location}", skipping'
                     )
                 else:
-                    logger.debug(f"Getting file info")
+                    logger.debug("Getting file info")
                     file_id = downloader.get_file_id(metadata)
                     if not file_id:
                         logger.error(
@@ -314,11 +314,11 @@ def main(
                             "servers and no alternative found, skipping"
                         )
                         continue
-                    logger.debug(f"Getting PSSH")
+                    logger.debug("Getting PSSH")
                     pssh = downloader.get_pssh(file_id)
-                    logger.debug(f"Getting decryption key")
+                    logger.debug("Getting decryption key")
                     decryption_key = downloader.get_decryption_key(pssh)
-                    logger.debug(f"Getting stream URL")
+                    logger.debug("Getting stream URL")
                     stream_url = downloader.get_stream_url(file_id)
                     encrypted_location = downloader.get_encrypted_location(track_id)
                     logger.debug(f'Downloading to "{encrypted_location}"')
@@ -329,7 +329,7 @@ def main(
                     fixed_location = downloader.get_fixed_location(track_id)
                     logger.debug(f'Remuxing to "{fixed_location}"')
                     downloader.fixup(decryption_key, encrypted_location, fixed_location)
-                    logger.debug(f"Applying tags")
+                    logger.debug("Applying tags")
                     downloader.apply_tags(fixed_location, tags, cover_url)
                     logger.debug(f'Moving to "{final_location}"')
                     downloader.move_to_final_location(fixed_location, final_location)
