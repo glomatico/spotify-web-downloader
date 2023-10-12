@@ -189,13 +189,16 @@ class Downloader:
         return lrc_timestamp.strftime("%M:%S.%f")[:-4]
 
     def get_lyrics(self, track_id: str) -> tuple[str, str]:
-        raw_lyrics = self.session.get(
+        lyrics_response = self.session.get(
             f"https://spclient.wg.spotify.com/color-lyrics/v2/track/{track_id}"
-        ).json()["lyrics"]
+        )
+        if lyrics_response.status_code == 404:
+            return None, None
+        lyrics_raw = lyrics_response.json()["lyrics"]
         lyrics_synced = ""
         lyrics_unsynced = ""
-        for line in raw_lyrics["lines"]:
-            if raw_lyrics["syncType"] == "LINE_SYNCED":
+        for line in lyrics_raw["lines"]:
+            if lyrics_raw["syncType"] == "LINE_SYNCED":
                 lyrics_synced += f'[{self.get_lyrics_synced_lrc_timestamp(int(line["startTimeMs"]))}]{line["words"]}\n'
             lyrics_unsynced += f'{line["words"]}\n'
         return lyrics_unsynced[:-1], lyrics_synced
