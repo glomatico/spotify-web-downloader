@@ -10,15 +10,6 @@ from . import __version__
 from .constants import *
 from .downloader import Downloader
 
-EXCLUDED_PARAMS = (
-    "urls",
-    "config_location",
-    "url_txt",
-    "no_config_file",
-    "version",
-    "help",
-)
-
 
 def write_default_config_file(ctx: click.Context):
     ctx.params["config_location"].parent.mkdir(parents=True, exist_ok=True)

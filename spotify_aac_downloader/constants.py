@@ -1,3 +1,12 @@
+EXCLUDED_PARAMS = (
+    "urls",
+    "config_location",
+    "url_txt",
+    "no_config_file",
+    "version",
+    "help",
+)
+
 MP4_TAGS_MAP = {
     "album": "\xa9alb",
     "album_artist": "aART",
