@@ -291,7 +291,7 @@ def main(
                 metadata = downloader.get_metadata(gid)
                 logger.debug(f"Getting lyrics")
                 lyrics_unsynced, lyrics_synced = downloader.get_lyrics(
-                    track_id, metadata["has_lyrics"]
+                    track_id, metadata.get("has_lyrics")
                 )
                 tags = downloader.get_tags(metadata, lyrics_unsynced)
                 final_location = downloader.get_final_location(tags)
