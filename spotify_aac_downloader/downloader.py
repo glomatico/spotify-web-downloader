@@ -186,9 +186,7 @@ class Downloader:
         lrc_timestamp = datetime.datetime.fromtimestamp(time / 1000.0)
         return lrc_timestamp.strftime("%M:%S.%f")[:-4]
 
-    def get_lyrics(self, track_id: str, has_lyrics: bool) -> tuple[str, str]:
-        if not has_lyrics:
-            return None, None
+    def get_lyrics(self, track_id: str) -> tuple[str, str]:
         raw_lyrics = self.session.get(
             f"https://spclient.wg.spotify.com/color-lyrics/v2/track/{track_id}"
         ).json()["lyrics"]
