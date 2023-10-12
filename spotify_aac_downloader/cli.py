@@ -129,8 +129,8 @@ def no_config_callback(
 )
 @click.option(
     "--download-mode",
-    type=click.Choice(["native", "aria2c"]),
-    default="native",
+    type=click.Choice(["ytdlp", "aria2c"]),
+    default="ytdlp",
     help="Download mode.",
 )
 @click.option(
@@ -321,8 +321,8 @@ def main(
                     stream_url = downloader.get_stream_url(file_id)
                     encrypted_location = downloader.get_encrypted_location(track_id)
                     logger.debug(f'Downloading to "{encrypted_location}"')
-                    if download_mode == "native":
-                        downloader.download_native(encrypted_location, stream_url)
+                    if download_mode == "ytdlp":
+                        downloader.download_ytdlp(encrypted_location, stream_url)
                     if download_mode == "aria2c":
                         downloader.download_aria2c(encrypted_location, stream_url)
                     fixed_location = downloader.get_fixed_location(track_id)

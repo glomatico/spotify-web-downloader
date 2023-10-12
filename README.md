@@ -52,7 +52,7 @@ spotify-aac-downloader can be configured using the command line arguments or the
 | `--template-folder-compilation` / `template_folder_compilation` | Template of the compilation album folders as a format string.         | `Compilations/{album}`                              |
 | `--template-file-single-disc` / `template_file_single_disc`     | Template of the song files for single-disc albums as a format string. | `{track:02d} {title}`                               |
 | `--template-file-multi-disc` / `template_file_multi_disc`       | Template of the song files for multi-disc albums as a format string.  | `{disc}-{track:02d} {title}`                        |
-| `--download-mode` / `download_mode`                             | Download mode.                                                        | `native`                                            |
+| `--download-mode` / `download_mode`                             | Download mode.                                                        | `ytdlp`                                             |
 | `-e`, `--exclude-tags` / `exclude_tags`                         | List of tags to exclude from file tagging separated by commas.        | `null`                                              |
 | `--truncate` / `truncate`                                       | Maximum length of the file/folder names.                              | `40`                                                |
 | `-l`, `--log-level` / `log_level`                               | Log level.                                                            | `INFO`                                              |
@@ -88,7 +88,7 @@ The following variables can be used in the template folder/file and/or in the `e
 
 ### Download mode
 The following download modes are available:
-* `native` (default)
+* `ytdlp` (default)
 * `aria2c`
     * Faster than `native`
     * Can be obtained from here: https://github.com/aria2/aria2/releases

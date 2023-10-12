@@ -2,4 +2,4 @@ click
 pybase62
 pywidevine
 pyyaml
-tqdm
+yt-dlp
