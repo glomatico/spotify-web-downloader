@@ -10,9 +10,9 @@ from pathlib import Path
 
 import base62
 import requests
-import tqdm
 from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
 from pywidevine import PSSH, Cdm, Device
+from yt_dlp import YoutubeDL
 
 from .constants import *
 
@@ -42,7 +42,9 @@ class Downloader:
         self.ffmpeg_location = (
             shutil.which(ffmpeg_location) if ffmpeg_location else None
         )
-        self.aria2c_location = shutil.which("aria2c") if aria2c_location else None
+        self.aria2c_location = (
+            shutil.which(aria2c_location) if aria2c_location else None
+        )
         self.template_folder_album = template_folder_album
         self.template_folder_compilation = template_folder_compilation
         self.template_file_single_disc = template_file_single_disc
@@ -182,21 +184,22 @@ class Downloader:
             + f' & {artist_list[-1]["name"]}'
         )
 
-    def get_lyrics_synced_lrc_timestamp(self, time: int) -> str:
+    def get_lyrics_synced_timestamp_lrc(self, time: int) -> str:
         lrc_timestamp = datetime.datetime.fromtimestamp(time / 1000.0)
         return lrc_timestamp.strftime("%M:%S.%f")[:-4]
 
-    def get_lyrics(self, track_id: str, has_lyrics: bool) -> tuple[str, str]:
-        if not has_lyrics:
-            return None, None
-        raw_lyrics = self.session.get(
+    def get_lyrics(self, track_id: str) -> tuple[str, str]:
+        lyrics_response = self.session.get(
             f"https://spclient.wg.spotify.com/color-lyrics/v2/track/{track_id}"
-        ).json()["lyrics"]
+        )
+        if lyrics_response.status_code == 404:
+            return None, None
+        lyrics_raw = lyrics_response.json()["lyrics"]
         lyrics_synced = ""
         lyrics_unsynced = ""
-        for line in raw_lyrics["lines"]:
-            if raw_lyrics["syncType"] == "LINE_SYNCED":
-                lyrics_synced += f'[{self.get_lyrics_synced_lrc_timestamp(int(line["startTimeMs"]))}]{line["words"]}\n'
+        for line in lyrics_raw["lines"]:
+            if lyrics_raw["syncType"] == "LINE_SYNCED":
+                lyrics_synced += f'[{self.get_lyrics_synced_timestamp_lrc(int(line["startTimeMs"]))}]{line["words"]}\n'
             lyrics_unsynced += f'{line["words"]}\n'
         return lyrics_unsynced[:-1], lyrics_synced
 
@@ -307,19 +310,17 @@ class Downloader:
             *final_location_file
         )
 
-    def download_native(self, encrypted_location: Path, stream_url: str) -> None:
-        chunk_size = 8192
-        encrypted_location.parent.mkdir(parents=True, exist_ok=True)
-        with self.session.get(stream_url, stream=True) as streaming_response, tqdm.tqdm(
-            total=int(streaming_response.headers["Content-Length"]),
-            unit="B",
-            unit_scale=True,
-            unit_divisor=1024,
-            leave=False,
-        ) as progress_bar, open(encrypted_location, "wb") as file:
-            for chunk in streaming_response.iter_content(chunk_size):
-                file.write(chunk)
-                progress_bar.update(chunk_size)
+    def download_ytdlp(self, encrypted_location: Path, stream_url: str) -> None:
+        with YoutubeDL(
+            {
+                "quiet": True,
+                "no_warnings": True,
+                "outtmpl": str(encrypted_location),
+                "allow_unplayable_formats": True,
+                "fixup": "never",
+            }
+        ) as ydl:
+            ydl.download(stream_url)
 
     def download_aria2c(self, encrypted_location: Path, stream_url: str) -> None:
         encrypted_location.parent.mkdir(parents=True, exist_ok=True)

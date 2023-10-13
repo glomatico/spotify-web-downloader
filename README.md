@@ -13,7 +13,7 @@ A Python script to download songs/albums/playlists directly from Spotify in 256k
 3. Place your cookies in the same folder that you will run spotify-aac-downloader as `cookies.txt`
     * You can export your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
 4. Place your .wvd file in the same folder that you will run spotify-aac-downloader as `device.wvd`
-    * To get a .wvd file, you can use [dumper](https://github.com/wvdumper/dumper) to dump your phone's L3 CDM. Once you have the L3 CDM, use pywidevine to create the .wvd file from it.
+    * To get a .wvd file, you can use [dumper](https://github.com/wvdumper/dumper) to dump a L3 CDM from an Android device. Once you have the L3 CDM, use pywidevine to create the .wvd file from it.
         1. Install pywidevine with pip
             ```bash
             pip install pywidevine pyyaml
@@ -52,7 +52,7 @@ spotify-aac-downloader can be configured using the command line arguments or the
 | `--template-folder-compilation` / `template_folder_compilation` | Template of the compilation album folders as a format string.         | `Compilations/{album}`                              |
 | `--template-file-single-disc` / `template_file_single_disc`     | Template of the song files for single-disc albums as a format string. | `{track:02d} {title}`                               |
 | `--template-file-multi-disc` / `template_file_multi_disc`       | Template of the song files for multi-disc albums as a format string.  | `{disc}-{track:02d} {title}`                        |
-| `--download-mode` / `download_mode`                             | Download mode.                                                        | `native`                                            |
+| `--download-mode` / `download_mode`                             | Download mode.                                                        | `ytdlp`                                             |
 | `-e`, `--exclude-tags` / `exclude_tags`                         | List of tags to exclude from file tagging separated by commas.        | `null`                                              |
 | `--truncate` / `truncate`                                       | Maximum length of the file/folder names.                              | `40`                                                |
 | `-l`, `--log-level` / `log_level`                               | Log level.                                                            | `INFO`                                              |
@@ -88,7 +88,7 @@ The following variables can be used in the template folder/file and/or in the `e
 
 ### Download mode
 The following download modes are available:
-* `native` (default)
+* `ytdlp` (default)
 * `aria2c`
-    * Faster than `native`
+    * Faster than `ytdlp`
     * Can be obtained from here: https://github.com/aria2/aria2/releases

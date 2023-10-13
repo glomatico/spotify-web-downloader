@@ -10,15 +10,6 @@ from . import __version__
 from .constants import *
 from .downloader import Downloader
 
-EXCLUDED_PARAMS = (
-    "urls",
-    "config_location",
-    "url_txt",
-    "no_config_file",
-    "version",
-    "help",
-)
-
 
 def write_default_config_file(ctx: click.Context):
     ctx.params["config_location"].parent.mkdir(parents=True, exist_ok=True)
@@ -129,8 +120,8 @@ def no_config_callback(
 )
 @click.option(
     "--download-mode",
-    type=click.Choice(["native", "aria2c"]),
-    default="native",
+    type=click.Choice(["ytdlp", "aria2c"]),
+    default="ytdlp",
     help="Download mode.",
 )
 @click.option(
@@ -286,13 +277,14 @@ def main(
             try:
                 logger.info(f'({current_track}) Downloading "{track["name"]}"')
                 track_id = track["id"]
-                logger.debug(f"Getting metadata")
+                logger.debug("Getting metadata")
                 gid = downloader.uri_to_gid(track_id)
                 metadata = downloader.get_metadata(gid)
-                logger.debug(f"Getting lyrics")
-                lyrics_unsynced, lyrics_synced = downloader.get_lyrics(
-                    track_id, metadata["has_lyrics"]
-                )
+                if metadata.get("has_lyrics"):
+                    logger.debug("Getting lyrics")
+                    lyrics_unsynced, lyrics_synced = downloader.get_lyrics(track_id)
+                else:
+                    lyrics_unsynced, lyrics_synced = None, None
                 tags = downloader.get_tags(metadata, lyrics_unsynced)
                 final_location = downloader.get_final_location(tags)
                 lrc_location = downloader.get_lrc_location(final_location)
@@ -305,7 +297,7 @@ def main(
                         f'({current_track}) Track already exists at "{final_location}", skipping'
                     )
                 else:
-                    logger.debug(f"Getting file info")
+                    logger.debug("Getting file info")
                     file_id = downloader.get_file_id(metadata)
                     if not file_id:
                         logger.error(
@@ -313,22 +305,22 @@ def main(
                             "servers and no alternative found, skipping"
                         )
                         continue
-                    logger.debug(f"Getting PSSH")
+                    logger.debug("Getting PSSH")
                     pssh = downloader.get_pssh(file_id)
-                    logger.debug(f"Getting decryption key")
+                    logger.debug("Getting decryption key")
                     decryption_key = downloader.get_decryption_key(pssh)
-                    logger.debug(f"Getting stream URL")
+                    logger.debug("Getting stream URL")
                     stream_url = downloader.get_stream_url(file_id)
                     encrypted_location = downloader.get_encrypted_location(track_id)
                     logger.debug(f'Downloading to "{encrypted_location}"')
-                    if download_mode == "native":
-                        downloader.download_native(encrypted_location, stream_url)
+                    if download_mode == "ytdlp":
+                        downloader.download_ytdlp(encrypted_location, stream_url)
                     if download_mode == "aria2c":
                         downloader.download_aria2c(encrypted_location, stream_url)
                     fixed_location = downloader.get_fixed_location(track_id)
                     logger.debug(f'Remuxing to "{fixed_location}"')
                     downloader.fixup(decryption_key, encrypted_location, fixed_location)
-                    logger.debug(f"Applying tags")
+                    logger.debug("Applying tags")
                     downloader.apply_tags(fixed_location, tags, cover_url)
                     logger.debug(f'Moving to "{final_location}"')
                     downloader.move_to_final_location(fixed_location, final_location)
