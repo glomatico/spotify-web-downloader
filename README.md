@@ -13,7 +13,7 @@ A Python script to download songs/albums/playlists directly from Spotify in 256k
 3. Place your cookies in the same folder that you will run spotify-aac-downloader as `cookies.txt`
     * You can export your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
 4. Place your .wvd file in the same folder that you will run spotify-aac-downloader as `device.wvd`
-    * To get a .wvd file, you can use [dumper](https://github.com/wvdumper/dumper) to dump your phone's L3 CDM. Once you have the L3 CDM, use pywidevine to create the .wvd file from it.
+    * To get a .wvd file, you can use [dumper](https://github.com/wvdumper/dumper) to dump a L3 CDM from an Android device. Once you have the L3 CDM, use pywidevine to create the .wvd file from it.
         1. Install pywidevine with pip
             ```bash
             pip install pywidevine pyyaml
