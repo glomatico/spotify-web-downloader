@@ -184,7 +184,7 @@ class Downloader:
             + f' & {artist_list[-1]["name"]}'
         )
 
-    def get_lyrics_synced_lrc_timestamp(self, time: int) -> str:
+    def get_lyrics_synced_timestamp_lrc(self, time: int) -> str:
         lrc_timestamp = datetime.datetime.fromtimestamp(time / 1000.0)
         return lrc_timestamp.strftime("%M:%S.%f")[:-4]
 
@@ -199,7 +199,7 @@ class Downloader:
         lyrics_unsynced = ""
         for line in lyrics_raw["lines"]:
             if lyrics_raw["syncType"] == "LINE_SYNCED":
-                lyrics_synced += f'[{self.get_lyrics_synced_lrc_timestamp(int(line["startTimeMs"]))}]{line["words"]}\n'
+                lyrics_synced += f'[{self.get_lyrics_synced_timestamp_lrc(int(line["startTimeMs"]))}]{line["words"]}\n'
             lyrics_unsynced += f'{line["words"]}\n'
         return lyrics_unsynced[:-1], lyrics_synced
 
