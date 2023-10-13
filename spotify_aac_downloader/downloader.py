@@ -154,7 +154,7 @@ class Downloader:
         )
 
     def get_pssh(self, file_id: str) -> str:
-        return self.session.get(
+        return requests.get(
             f"https://seektables.scdn.co/seektable/{file_id}.json"
         ).json()["pssh"]
 
