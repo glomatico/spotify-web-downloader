@@ -93,7 +93,7 @@ class Downloader:
         self.cdm_session = self.cdm.open()
 
     def get_download_queue(self, url: str) -> list[dict]:
-        uri = url.split("/")[-1].split("?")[0]
+        uri = re.search(r"(\w{22})", url).group(1)
         download_queue = []
         if "album" in url:
             download_queue.extend(self.get_album(uri)["tracks"]["items"])
@@ -154,7 +154,7 @@ class Downloader:
         )
 
     def get_pssh(self, file_id: str) -> str:
-        return self.session.get(
+        return requests.get(
             f"https://seektables.scdn.co/seektable/{file_id}.json"
         ).json()["pssh"]
 
@@ -318,6 +318,7 @@ class Downloader:
                 "outtmpl": str(encrypted_location),
                 "allow_unplayable_formats": True,
                 "fixup": "never",
+                "allowed_extractors": ["generic"],
             }
         ) as ydl:
             ydl.download(stream_url)

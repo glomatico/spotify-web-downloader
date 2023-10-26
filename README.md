@@ -88,7 +88,7 @@ The following variables can be used in the template folder/file and/or in the `e
 
 ### Download mode
 The following download modes are available:
-* `ytdlp` (default)
+* `ytdlp`
 * `aria2c`
     * Faster than `ytdlp`
     * Can be obtained from here: https://github.com/aria2/aria2/releases
