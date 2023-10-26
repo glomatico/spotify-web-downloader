@@ -93,7 +93,7 @@ class Downloader:
         self.cdm_session = self.cdm.open()
 
     def get_download_queue(self, url: str) -> list[dict]:
-        uri = url.split("/")[-1].split("?")[0]
+        uri = re.search(r"(\w{22})", url).group(1)
         download_queue = []
         if "album" in url:
             download_queue.extend(self.get_album(uri)["tracks"]["items"])
