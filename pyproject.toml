@@ -16,3 +16,6 @@ build-backend = "flit_core.buildapi"
 
 [project.scripts]
 spotify-aac-downloader = "spotify_aac_downloader.cli:main"
+
+[flake8]
+max-line-length = 180

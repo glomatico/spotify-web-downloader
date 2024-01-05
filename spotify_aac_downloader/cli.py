@@ -254,7 +254,7 @@ def main(
         logger.debug("Setting up CDM")
         downloader.setup_cdm()
     logger.debug("Setting up session")
-    downloader.setup_session()
+    downloader.initialize_sessions()
     if premium_quality and downloader.is_premium == "false":
         logger.critical("Cannot download in premium quality with a free account")
         return
