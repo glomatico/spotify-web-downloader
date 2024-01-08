@@ -230,7 +230,12 @@ class Downloader:
 
     def get_tags(self, metadata: dict, lyrics_unsynced: str) -> dict:
         album = self.get_album(self.gid_to_uri(metadata["album"]["gid"]))
-        isrc = next((i for i in metadata["external_id"] if i["type"] == "isrc"), None)
+        if metadata.get("external_id"):
+            isrc = next(
+                (i for i in metadata["external_id"] if i["type"] == "isrc"), None
+            )
+        else:
+            isrc = None
         tags = {
             "album": metadata["album"]["name"],
             "album_artist": self.get_artist(metadata["album"]["artist"]),
