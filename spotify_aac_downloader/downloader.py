@@ -185,7 +185,9 @@ class Downloader:
         )
 
     def get_lyrics_synced_timestamp_lrc(self, time: int) -> str:
-        lrc_timestamp = datetime.datetime.fromtimestamp(time / 1000.0)
+        lrc_timestamp = datetime.datetime.fromtimestamp(
+            time / 1000.0, tz=datetime.timezone.utc
+        )
         return lrc_timestamp.strftime("%M:%S.%f")[:-4]
 
     def get_lyrics(self, track_id: str) -> tuple[str, str]:
