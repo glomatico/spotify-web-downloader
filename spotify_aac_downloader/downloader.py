@@ -65,7 +65,7 @@ class Downloader:
             {
                 "app-platform": "WebPlayer",
                 "accept": "application/json",
-                "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,zh-CN;q=0.6,zh;q=0.5,ru;q=0.4,es;q=0.3,ja;q=0.2",
+                "accept-language": "en-US;q=0.8,en;q=0.7,zh-CN;q=0.6,zh;q=0.5,ru;q=0.4,es;q=0.3,ja;q=0.2",
                 "content-type": "application/json",
                 "origin": "https://open.spotify.com",
                 "referer": "https://open.spotify.com/",
