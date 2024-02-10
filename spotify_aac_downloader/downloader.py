@@ -66,7 +66,7 @@ class Downloader:
             {
                 "app-platform": "WebPlayer",
                 "accept": "application/json",
-                "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7,zh-CN;q=0.6,zh;q=0.5,ru;q=0.4,es;q=0.3,ja;q=0.2",
+                "accept-language": "en-US;q=0.8,en;q=0.7,zh-CN;q=0.6,zh;q=0.5,ru;q=0.4,es;q=0.3,ja;q=0.2",
                 "content-type": "application/json",
                 "origin": "https://open.spotify.com",
                 "referer": "https://open.spotify.com/",
@@ -223,11 +223,18 @@ class Downloader:
             return artist_list[0]["name"]
         return ";".join(i["name"] for i in artist_list)
 
-    def get_artist(self, artist_list: list[dict]):
-        return artist_list[0]["name"]
+    def get_artist(self, artist_list: list[dict]) -> str:
+        if len(artist_list) == 1:
+            return artist_list[0]["name"]
+        return (
+            ", ".join(i["name"] for i in artist_list[:-1])
+            + f' & {artist_list[-1]["name"]}'
+        )
 
     def get_lyrics_synced_timestamp_lrc(self, time: int) -> str:
-        lrc_timestamp = datetime.datetime.fromtimestamp(time / 1000.0)
+        lrc_timestamp = datetime.datetime.fromtimestamp(
+            time / 1000.0, tz=datetime.timezone.utc
+        )
         return lrc_timestamp.strftime("%M:%S.%f")[:-4]
 
     def get_lyrics(self, track_id: str) -> tuple[str, str]:
@@ -288,11 +295,17 @@ class Downloader:
                 album["copyrights"],
             )
             pass
-        isrc = next((i for i in metadata["external_id"] if i["type"] == "isrc"), None)
+        isrc = None
+        if metadata.get("external_id"):
+            isrc = next((i for i in metadata["external_id"] if i["type"] == "isrc"), None)
         tags = {
-            "album": metadata["album"]["name"],
-            "album_artist": self.get_artists(metadata["album"]["artist"]),
+            # All artists, `;` separated
+            "artists": self.get_artists(metadata["artist"]),
+            # All artists, "display"-style
             "artist": self.get_artist(metadata["artist"]),
+            "album_artist": self.get_artist(metadata["album"]["artist"]),
+
+            "album": metadata["album"]["name"],
             "comment": f'https://open.spotify.com/track/{metadata["canonical_uri"].split(":")[-1]}',
             "compilation": True if album["album_type"] == "compilation" else False,
             "copyright": copyright,
