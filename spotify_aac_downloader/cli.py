@@ -73,7 +73,7 @@ def no_config_callback(
     "--wvd-location",
     "-w",
     type=Path,
-    default="./device.wvd",
+    default=None,
     help="Location of the .wvd file.",
 )
 @click.option(
@@ -237,9 +237,6 @@ def main(
     if cookies_location is not None and not cookies_location.exists():
         logger.critical(X_NOT_FOUND_STRING.format("Cookies", cookies_location))
         return
-    if not wvd_location.exists() and not lrc_only:
-        logger.critical(X_NOT_FOUND_STRING.format(".wvd file", wvd_location))
-        return
     if url_txt:
         logger.debug("Reading URLs from text files")
         _urls = []
@@ -248,7 +245,7 @@ def main(
                 _urls.extend(f.read().splitlines())
         urls = tuple(_urls)
     if not lrc_only:
-        if not wvd_location.exists():
+        if wvd_location and not wvd_location.exists():
             logger.critical(X_NOT_FOUND_STRING.format(".wvd file", wvd_location))
             return
         logger.debug("Setting up CDM")

@@ -12,17 +12,7 @@ A Python script to download songs/albums/playlists directly from Spotify in 256k
     * Older versions of FFmpeg may not work
 3. Place your cookies in the same folder that you will run spotify-aac-downloader as `cookies.txt`
     * You can export your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
-4. Place your .wvd file in the same folder that you will run spotify-aac-downloader as `device.wvd`
-    * To get a .wvd file, you can use [dumper](https://github.com/wvdumper/dumper) to dump a L3 CDM from an Android device. Once you have the L3 CDM, use pywidevine to create the .wvd file from it.
-        1. Install pywidevine with pip
-            ```bash
-            pip install pywidevine pyyaml
-            ```
-        2. Create the .wvd file
-            ```bash
-            pywidevine create-device -t ANDROID -l 3 -k private_key.pem -c client_id.bin -o .
-            ```
-5. Install spotify-aac-downloader using pip
+4. Install spotify-aac-downloader using pip
     ```bash
     pip install spotify-aac-downloader
     ```
@@ -44,7 +34,7 @@ spotify-aac-downloader can be configured using the command line arguments or the
 | `-f`, `--final-path` / `final_path`                             | Path where the downloaded files will be saved.                        | `./Spotify`                                         |
 | `-t`, `--temp-path` / `temp_path`                               | Path where the temporary files will be saved.                         | `./temp`                                            |
 | `-c`, `--cookies-location` / `cookies_location`                 | Location of the cookies file.                                         | `./cookies.txt`                                     |
-| `-w`, `--wvd-location` / `wvd_location`                         | Location of the .wvd file.                                            | `./device.wvd`                                      |
+| `-w`, `--wvd-location` / `wvd_location`                         | Location of the .wvd file.                                            | `null`                                              |
 | `--config-location` / -                                         | Location of the config file.                                          | `<home_folder>/.spotify-aac-downloader/config.json` |
 | `--ffmpeg-location` / `ffmpeg_location`                         | Location of the FFmpeg binary.                                        | `ffmpeg`                                            |
 | `--aria2c-location` / `aria2c_location`                         | Location of the aria2c binary.                                        | `aria2c`                                            |

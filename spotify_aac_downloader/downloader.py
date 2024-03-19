@@ -15,6 +15,7 @@ from pywidevine import PSSH, Cdm, Device
 from yt_dlp import YoutubeDL
 
 from .constants import *
+from .hardcoded_wvd import HARDCODED_WVD
 
 
 class Downloader:
@@ -89,8 +90,10 @@ class Downloader:
         )
 
     def setup_cdm(self) -> None:
-        self.cdm = Cdm.from_device(Device.load(self.wvd_location))
-        self.cdm_session = self.cdm.open()
+        if self.wvd_location:
+            self.cdm = Cdm.from_device(Device.load(self.wvd_location))
+        else:
+            self.cdm = Cdm.from_device(Device.loads(HARDCODED_WVD))
 
     def get_download_queue(self, url: str) -> list[dict]:
         uri = re.search(r"(\w{22})", url).group(1)
@@ -160,15 +163,18 @@ class Downloader:
 
     def get_decryption_key(self, pssh: str) -> str:
         pssh = PSSH(pssh)
-        challenge = self.cdm.get_license_challenge(self.cdm_session, pssh)
+        cdm_session = self.cdm.open()
+        challenge = self.cdm.get_license_challenge(cdm_session, pssh)
         license = self.session.post(
             "https://gue1-spclient.spotify.com/widevine-license/v1/audio/license",
             challenge,
         ).content
-        self.cdm.parse_license(self.cdm_session, license)
-        return next(
-            i for i in self.cdm.get_keys(self.cdm_session) if i.type == "CONTENT"
+        self.cdm.parse_license(cdm_session, license)
+        decryption_key = next(
+            i for i in self.cdm.get_keys(cdm_session) if i.type == "CONTENT"
         ).key.hex()
+        self.cdm.close(cdm_session)
+        return decryption_key
 
     def get_stream_url(self, file_id: str) -> str:
         return self.session.get(
@@ -234,7 +240,9 @@ class Downloader:
         album = self.get_album(self.gid_to_uri(metadata["album"]["gid"]))
         isrc = None
         if metadata.get("external_id"):
-            isrc = next((i for i in metadata["external_id"] if i["type"] == "isrc"), None)
+            isrc = next(
+                (i for i in metadata["external_id"] if i["type"] == "isrc"), None
+            )
         tags = {
             "album": metadata["album"]["name"],
             "album_artist": self.get_artist(metadata["album"]["artist"]),
