@@ -79,7 +79,7 @@ def no_config_callback(
 @click.option(
     "--config-location",
     type=Path,
-    default=Path.home() / ".spotify-aac-downloader" / "config.json",
+    default=Path.home() / ".spotify-web-downloader" / "config.json",
     help="Location of the config file.",
 )
 @click.option(

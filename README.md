@@ -1,4 +1,4 @@
-# Spotify AAC Downloader
+# Spotify Web Downloader
 A Python script to download songs/albums/playlists directly from Spotify in 256kbps/128kbps AAC.
 
 ## Features
@@ -10,32 +10,32 @@ A Python script to download songs/albums/playlists directly from Spotify in 256k
 1. Install Python 3.7 or higher
 2. Add [FFmpeg](https://ffmpeg.org/download.html) to PATH
     * Older versions of FFmpeg may not work
-3. Place your cookies in the same folder that you will run spotify-aac-downloader as `cookies.txt`
+3. Place your cookies in the same folder that you will run spotify-web-downloader as `cookies.txt`
     * You can export your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
-4. Install spotify-aac-downloader using pip
+4. Install spotify-web-downloader using pip
     ```bash
-    pip install spotify-aac-downloader
+    pip install spotify-web-downloader
     ```
 
 ## Examples
 * Download a song
     ```bash
-    spotify-aac-downloader "https://open.spotify.com/track/18gqCQzqYb0zvurQPlRkpo"
+    spotify-web-downloader "https://open.spotify.com/track/18gqCQzqYb0zvurQPlRkpo"
     ```
 * Download an album
     ```bash
-    spotify-aac-downloader "https://open.spotify.com/album/0r8D5N674HbTXlR3zNxeU1"
+    spotify-web-downloader "https://open.spotify.com/album/0r8D5N674HbTXlR3zNxeU1"
     ```
 
 ## Configuration
-spotify-aac-downloader can be configured using the command line arguments or the config file. The config file is created automatically when you run spotify-aac-downloader for the first time at `~/.spotify-aac-downloader/config.json` on Linux and `%USERPROFILE%\.spotify-aac-downloader\config.json` on Windows. Config file values can be overridden using command line arguments.
+spotify-web-downloader can be configured using the command line arguments or the config file. The config file is created automatically when you run spotify-web-downloader for the first time at `~/.spotify-web-downloader/config.json` on Linux and `%USERPROFILE%\.spotify-web-downloader\config.json` on Windows. Config file values can be overridden using command line arguments.
 | Command line argument / Config file key                         | Description                                                           | Default value                                       |
 | --------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------- |
 | `-f`, `--final-path` / `final_path`                             | Path where the downloaded files will be saved.                        | `./Spotify`                                         |
 | `-t`, `--temp-path` / `temp_path`                               | Path where the temporary files will be saved.                         | `./temp`                                            |
 | `-c`, `--cookies-location` / `cookies_location`                 | Location of the cookies file.                                         | `./cookies.txt`                                     |
 | `-w`, `--wvd-location` / `wvd_location`                         | Location of the .wvd file.                                            | `null`                                              |
-| `--config-location` / -                                         | Location of the config file.                                          | `<home_folder>/.spotify-aac-downloader/config.json` |
+| `--config-location` / -                                         | Location of the config file.                                          | `<home_folder>/.spotify-web-downloader/config.json` |
 | `--ffmpeg-location` / `ffmpeg_location`                         | Location of the FFmpeg binary.                                        | `ffmpeg`                                            |
 | `--aria2c-location` / `aria2c_location`                         | Location of the aria2c binary.                                        | `aria2c`                                            |
 | `--template-folder-album` / `template_folder_album`             | Template of the album folders as a format string.                     | `{album_artist}/{album}`                            |
