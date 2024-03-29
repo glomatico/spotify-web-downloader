@@ -87,7 +87,7 @@ def load_config_file(
     "--read-urls-as-txt",
     "-r",
     is_flag=True,
-    help="Read URLs as location of text files containing URLs.",
+    help="Interpret URLs as paths to text files containing URLs.",
 )
 @click.option(
     "--lrc-only",
