@@ -156,14 +156,6 @@ class DownloaderSong:
             check=True,
         )
 
-    def get_artist(self, artist_list: list[dict]) -> str:
-        if len(artist_list) == 1:
-            return artist_list[0]["name"]
-        return (
-            ", ".join(i["name"] for i in artist_list[:-1])
-            + f' & {artist_list[-1]["name"]}'
-        )
-
     def get_lyrics_synced_timestamp_lrc(self, time: int) -> str:
         lrc_timestamp = datetime.datetime.fromtimestamp(
             time / 1000.0, tz=datetime.timezone.utc
@@ -183,53 +175,6 @@ class DownloaderSong:
             lyrics.unsynced += f'{line["words"]}\n'
         lyrics.unsynced = lyrics.unsynced[:-1]
         return lyrics
-
-    def get_tags(
-        self,
-        album_metadata: dict,
-        metadata_gid: dict,
-        lyrics_unsynced: str,
-    ) -> dict:
-        isrc = None
-        if metadata_gid.get("external_id"):
-            isrc = next(
-                (i for i in metadata_gid["external_id"] if i["type"] == "isrc"), None
-            )
-        release_date_datetime_obj = self.downloader.get_release_date_datetime_obj(
-            album_metadata["release_date_precision"], album_metadata["release_date"]
-        )
-        tags = {
-            "album": metadata_gid["album"]["name"],
-            "album_artist": self.get_artist(metadata_gid["album"]["artist"]),
-            "artist": self.get_artist(metadata_gid["artist"]),
-            "comment": f'https://open.spotify.com/track/{metadata_gid["canonical_uri"].split(":")[-1]}',
-            "compilation": (
-                True if album_metadata["album_type"] == "compilation" else False
-            ),
-            "copyright": next(
-                (i["text"] for i in album_metadata["copyrights"] if i["type"] == "P"),
-                None,
-            ),
-            "disc": metadata_gid["disc_number"],
-            "disc_total": album_metadata["tracks"]["items"][-1]["disc_number"],
-            "isrc": isrc.get("id") if isrc is not None else None,
-            "label": metadata_gid["album"].get("label"),
-            "lyrics": lyrics_unsynced,
-            "media_type": 1,
-            "rating": 1 if "explicit" in metadata_gid else 0,
-            "title": metadata_gid["name"],
-            "track": metadata_gid["number"],
-            "track_total": max(
-                i["track_number"]
-                for i in album_metadata["tracks"]["items"]
-                if i["disc_number"] == metadata_gid["disc_number"]
-            ),
-            "release_date": self.downloader.get_release_date_tag(
-                release_date_datetime_obj
-            ),
-        }
-        tags["release_year"] = str(release_date_datetime_obj.year)
-        return tags
 
     def get_cover_path(self, final_path: Path) -> Path:
         return final_path.parent / "Cover.jpg"
