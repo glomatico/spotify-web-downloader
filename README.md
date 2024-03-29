@@ -40,8 +40,8 @@ spotify-web-downloader can be configured using the command line arguments or the
 | `--config-path` / -                                             | Path to config file.                                                  | `<home_path>/.spotify-web-downloader/config.json` |
 | `--log-level` / `log_level`                                     | Log level.                                                            | `INFO`                                            |
 | `--print-exceptions` / `print_exceptions`                       | Print exceptions.                                                     | `false`                                           |
-| `-c,`, `--cookies-path` / `cookies_path`                        | Path to .txt cookies file                                             | `cookies.txt`                                     |
-| `-o,`, `--output-path` / `output_path`                          | Path to output directory                                              | `Spotify`                                         |
+| `-c,`, `--cookies-path` / `cookies_path`                        | Path to .txt cookies file                                             | `./cookies.txt`                                   |
+| `-o,`, `--output-path` / `output_path`                          | Path to output directory                                              | `./Spotify`                                       |
 | `--temp-path` / `temp_path`                                     | Path to temporary directory                                           | `temp`                                            |
 | `--wvd-path` / `wvd_path`                                       | Path to .wvd file                                                     | `null`                                            |
 | `--ffmpeg-path` / `ffmpeg_path`                                 | Path to ffmpeg binary                                                 | `ffmpeg`                                          |
