@@ -520,7 +520,7 @@ def main(
                         else:
                             logger.debug(f'Saving cover to "{cover_path}"')
                             downloader.save_cover(cover_path, cover_url)
-            except Exception:
+            except Exception as e:
                 error_count += 1
                 logger.error(
                     f'({queue_progress}) Failed to download "{track["name"]}"',
