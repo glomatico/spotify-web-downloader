@@ -21,11 +21,17 @@ class DownloadQueueItem:
 @dataclass
 class VideoStreamInfo:
     base_url: str = None
-    iniatialization_url_template: str = None
-    segment_url_template: str = None
+    iniatialization_template_url: str = None
+    segment_template_url: str = None
     end_time_millis: int = None
     segment_length: int = None
     profile_id_video: int = None
     profile_id_audio: int = None
     file_type_video: str = None
     file_type_audio: str = None
+    pssh: str = None
+
+
+class VideoM3U8:
+    video: str = None
+    audio: str = None
