@@ -459,9 +459,9 @@ def main(
                         stream_info.segment_template_url,
                         stream_info.end_time_millis,
                         stream_info.segment_length,
-                        stream_info.profile_id,
+                        stream_info.profile_id_video,
                         stream_info.profile_id_audio,
-                        stream_info.file_type,
+                        stream_info.file_type_video,
                         stream_info.file_type_audio,
                     )
                     m3u8_path_video = downloader_music_video.get_m3u8_path(
