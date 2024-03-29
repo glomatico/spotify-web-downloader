@@ -30,31 +30,38 @@ A Python script to download songs/music videos/albums/playlists directly from Sp
 
 ## Configuration
 spotify-web-downloader can be configured using the command line arguments or the config file. The config file is created automatically when you run spotify-web-downloader for the first time at `~/.spotify-web-downloader/config.json` on Linux and `%USERPROFILE%\.spotify-web-downloader\config.json` on Windows. Config file values can be overridden using command line arguments.
-| Command line argument / Config file key                         | Description                                                           | Default value                                       |
-| --------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------- |
-| `-f`, `--final-path` / `final_path`                             | Path where the downloaded files will be saved.                        | `./Spotify`                                         |
-| `-t`, `--temp-path` / `temp_path`                               | Path where the temporary files will be saved.                         | `./temp`                                            |
-| `-c`, `--cookies-location` / `cookies_location`                 | Location of the cookies file.                                         | `./cookies.txt`                                     |
-| `-w`, `--wvd-location` / `wvd_location`                         | Location of the .wvd file.                                            | `null`                                              |
-| `--config-location` / -                                         | Location of the config file.                                          | `<home_folder>/.spotify-web-downloader/config.json` |
-| `--ffmpeg-location` / `ffmpeg_location`                         | Location of the FFmpeg binary.                                        | `ffmpeg`                                            |
-| `--aria2c-location` / `aria2c_location`                         | Location of the aria2c binary.                                        | `aria2c`                                            |
-| `--template-folder-album` / `template_folder_album`             | Template of the album folders as a format string.                     | `{album_artist}/{album}`                            |
-| `--template-folder-compilation` / `template_folder_compilation` | Template of the compilation album folders as a format string.         | `Compilations/{album}`                              |
-| `--template-file-single-disc` / `template_file_single_disc`     | Template of the song files for single-disc albums as a format string. | `{track:02d} {title}`                               |
-| `--template-file-multi-disc` / `template_file_multi_disc`       | Template of the song files for multi-disc albums as a format string.  | `{disc}-{track:02d} {title}`                        |
-| `--download-mode` / `download_mode`                             | Download mode.                                                        | `ytdlp`                                             |
-| `-e`, `--exclude-tags` / `exclude_tags`                         | List of tags to exclude from file tagging separated by commas.        | `null`                                              |
-| `--truncate` / `truncate`                                       | Maximum length of the file/folder names.                              | `40`                                                |
-| `-l`, `--log-level` / `log_level`                               | Log level.                                                            | `INFO`                                              |
-| `-p`, `--premium-quality` / `premium_quality`                   | Download in 256kbps AAC instead of 128kbps AAC.                       | `false`                                             |
-| `-l`, `--lrc-only` / `lrc_only`                                 | Download only the synced lyrics.                                      | `false`                                             |
-| `-n`, `--no-lrc` / `no_lrc`                                     | Don't download the synced lyrics.                                     | `false`                                             |
-| `-s`, `--save-cover` / `save_cover`                             | Save cover as a separate file.                                        | `false`                                             |
-| `-o`, `--overwrite` / `overwrite`                               | Overwrite existing files.                                             | `false`                                             |
-| `--print-exceptions` / `print_exceptions`                       | Print exceptions.                                                     | `false`                                             |
-| `-u`, `--url-txt` / -                                           | Read URLs as location of text files containing URLs.                  | `false`                                             |
-| `-n`, `--no-config-file` / -                                    | Don't use the config file.                                            | `false`                                             |
+| Command line argument / Config file key                         | Description                                                           | Default value                                     |
+| --------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------- |
+| `-s,`, `--save-cover` / `save_cover`                            | Save cover as a separate file.                                        | `false`                                           |
+| `--overwrite` / `overwrite`                                     | Overwrite existing files.                                             | `false`                                           |
+| `-r,`, `--read-urls-as-txt` / -                                 | Interpret URLs as paths to text files containing URLs.                | `false`                                           |
+| `-l,`, `--lrc-only` / `lrc_only`                                | Download only the synced lyrics.                                      | `false`                                           |
+| `-n,`, `--no-lrc` / `no_lrc`                                    | Don't download the synced lyrics.                                     | `false`                                           |
+| `--config-path` / -                                             | Path to config file.                                                  | `<home_path>/.spotify-web-downloader/config.json` |
+| `--log-level` / `log_level`                                     | Log level.                                                            | `INFO`                                            |
+| `--print-exceptions` / `print_exceptions`                       | Print exceptions.                                                     | `false`                                           |
+| `-c,`, `--cookies-path` / `cookies_path`                        | Path to .txt cookies file                                             | `cookies.txt`                                     |
+| `-o,`, `--output-path` / `output_path`                          | Path to output directory                                              | `Spotify`                                         |
+| `--temp-path` / `temp_path`                                     | Path to temporary directory                                           | `temp`                                            |
+| `--wvd-path` / `wvd_path`                                       | Path to .wvd file                                                     | `null`                                            |
+| `--ffmpeg-path` / `ffmpeg_path`                                 | Path to ffmpeg binary                                                 | `ffmpeg`                                          |
+| `--aria2c-path` / `aria2c_path`                                 | Path to aria2c binary                                                 | `aria2c`                                          |
+| `--nm3u8dlre-path` / `nm3u8dlre_path`                           | Path to nm3u8dlre binary                                              | `N_m3u8DL-RE`                                     |
+| `--date-tag-template` / `date_tag_template`                     | Date tag template                                                     | `%Y-%m-%dT%H:%M:%SZ`                              |
+| `--exclude-tags` / `exclude_tags`                               | Comma-separated tags to exclude                                       | `null`                                            |
+| `--truncate` / `truncate`                                       | Maximum length of the file/folder names.                              | `40`                                              |
+| `--template-folder-album` / `template_folder_album`             | Template of the album folders as a format string.                     | `{album_artist}/{album}`                          |
+| `--template-folder-compilation` / `template_folder_compilation` | Template of the compilation album folders as a format string.         | `Compilations/{album}`                            |
+| `--template-file-single-disc` / `template_file_single_disc`     | Template of the song files for single-disc albums as a format string. | `{track:02d} {title}`                             |
+| `--template-file-multi-disc` / `template_file_multi_disc`       | Template of the song files for multi-disc albums as a format string.  | `{disc}-{track:02d} {title}`                      |
+| `--download-mode-song` / `download_mode_song`                   | Download mode for songs.                                              | `ytdlp`                                           |
+| `-p,`, `--premium-quality` / `premium_quality`                  | Download songs in premium quality.                                    | `false`                                           |
+| `--template-folder-music-video` / `template_folder_music_video` | Template of the music video folders as a format string.               | `{artist}/Unknown Album`                          |
+| `--template-file-music-video` / `template_file_music_video`     | Template of the music video files as a format string.                 | `{title}`                                         |
+| `--download-mode-video` / `download_mode_video`                 | Download mode for videos.                                             | `ytdlp`                                           |
+| `-n,`, `--no-config-file` / -                                   | Do not use a config file.                                             | `false`                                           |
+
+
 
 ### Tag variables
 The following variables can be used in the template folder/file and/or in the `exclude_tags` list:
@@ -77,17 +84,20 @@ The following variables can be used in the template folder/file and/or in the `e
 - `track`
 - `track_total`
 
+### Music videos quality
+Music videos will be downloaded in the highest quality available, up to 1080p.
+
 ### Download mode
 
 #### Songs
-The following options are available:
+The following modes are available:
 * `ytdlp`
 * `aria2c`
     * Faster than `ytdlp`
     * Can be obtained from here: https://github.com/aria2/aria2/releases
 
 #### Videos
-The following options are available:
+The following modes are available:
 * `ytdlp`
 * `nm38dlre`
     * Faster than `ytdlp`
