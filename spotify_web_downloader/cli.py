@@ -367,9 +367,8 @@ def main(
                     album_metadata = spotify_api.get_album(
                         spotify_api.gid_to_track_id(metadata_gid["album"]["gid"])
                     )
-                    tags = downloader.get_tags(
+                    tags = downloader_song.get_tags(
                         metadata_gid,
-                        1,
                         album_metadata,
                         lyrics.unsynced,
                     )
@@ -436,9 +435,12 @@ def main(
                     )
                 else:
                     cover_url = downloader.get_cover_url(metadata_gid, "XXLARGE")
-                    tags = downloader.get_tags(
+                    album_metadata = spotify_api.get_album(
+                        spotify_api.gid_to_track_id(metadata_gid["album"]["gid"])
+                    )
+                    tags = downloader_music_video.get_tags(
                         metadata_gid,
-                        6,
+                        album_metadata,
                     )
                     final_path = downloader_music_video.get_final_path(tags)
                     if final_path.exists() and not overwrite:

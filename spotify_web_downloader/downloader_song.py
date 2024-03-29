@@ -83,6 +83,53 @@ class DownloaderSong:
                 return None
         return next(i["file_id"] for i in audio_files if i["format"] == self.codec)
 
+    def get_tags(
+        self,
+        metadata_gid: dict,
+        album_metadata: dict,
+        lyrics_unsynced: str,
+    ) -> dict:
+        isrc = None
+        if metadata_gid.get("external_id"):
+            isrc = next(
+                (i for i in metadata_gid["external_id"] if i["type"] == "isrc"), None
+            )
+        release_date_datetime_obj = self.downloader.get_release_date_datetime_obj(
+            metadata_gid
+        )
+        tags = {
+            "album": album_metadata["name"],
+            "album_artist": self.downloader.get_artist(album_metadata["artists"]),
+            "artist": self.downloader.get_artist(metadata_gid["artist"]),
+            "comment": f'https://open.spotify.com/track/{metadata_gid["canonical_uri"].split(":")[-1]}',
+            "compilation": (
+                True if album_metadata["album_type"] == "compilation" else False
+            ),
+            "copyright": next(
+                (i["text"] for i in album_metadata["copyrights"] if i["type"] == "P"),
+                None,
+            ),
+            "disc": metadata_gid["disc_number"],
+            "disc_total": album_metadata["tracks"]["items"][-1]["disc_number"],
+            "isrc": isrc.get("id") if isrc is not None else None,
+            "label": metadata_gid["album"].get("label"),
+            "lyrics": lyrics_unsynced,
+            "media_type": 1,
+            "rating": 1 if metadata_gid.get("explicit") else 0,
+            "release_date": self.downloader.get_release_date_tag(
+                release_date_datetime_obj
+            ),
+            "release_year": str(release_date_datetime_obj.year),
+            "title": metadata_gid["name"],
+            "track": metadata_gid["number"],
+            "track_total": max(
+                i["track_number"]
+                for i in album_metadata["tracks"]["items"]
+                if i["disc_number"] == metadata_gid["disc_number"]
+            ),
+        }
+        return tags
+
     def download(self, encrypted_path: Path, stream_url: str):
         if self.download_mode == DownloadModeSong.YTDLP:
             self.download_ytdlp(encrypted_path, stream_url)

@@ -181,6 +181,41 @@ class DownloaderMusicVideo:
         m3u8_path.parent.mkdir(parents=True, exist_ok=True)
         m3u8_path.write_text(m3u8_str)
 
+    def get_tags(
+        self,
+        metadata_gid: dict,
+        album_metadata: dict,
+    ) -> dict:
+        isrc = None
+        if metadata_gid.get("external_id"):
+            isrc = next(
+                (i for i in metadata_gid["external_id"] if i["type"] == "isrc"), None
+            )
+        release_date_datetime_obj = self.downloader.get_release_date_datetime_obj(
+            metadata_gid
+        )
+        tags = {
+            "artist": self.downloader.get_artist(metadata_gid["artist"]),
+            "comment": f'https://open.spotify.com/track/{metadata_gid["canonical_uri"].split(":")[-1]}',
+            "compilation": (
+                True if album_metadata["album_type"] == "compilation" else False
+            ),
+            "copyright": next(
+                (i["text"] for i in album_metadata["copyrights"] if i["type"] == "P"),
+                None,
+            ),
+            "isrc": isrc.get("id") if isrc is not None else None,
+            "label": metadata_gid["album"].get("label"),
+            "media_type": 6,
+            "rating": 1 if metadata_gid.get("explicit") else 0,
+            "title": album_metadata["name"],
+            "release_date": self.downloader.get_release_date_tag(
+                release_date_datetime_obj
+            ),
+        }
+        tags["release_year"] = str(release_date_datetime_obj.year)
+        return tags
+
     def download(self, m3u8_path: Path, encrypted_path: str):
         if self.download_mode == DownloadModeVideo.YTDLP:
             self.download_ytdlp(m3u8_path, encrypted_path)

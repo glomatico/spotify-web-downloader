@@ -147,58 +147,6 @@ class Downloader:
             + f' & {artist_list[-1]["name"]}'
         )
 
-    def get_tags(
-        self,
-        metadata_gid: dict,
-        media_type: int,
-        album_metadata: dict = None,
-        lyrics_unsynced: str = None,
-    ) -> dict:
-        isrc = None
-        if metadata_gid.get("external_id"):
-            isrc = next(
-                (i for i in metadata_gid["external_id"] if i["type"] == "isrc"), None
-            )
-        release_date_datetime_obj = self.get_release_date_datetime_obj(metadata_gid)
-        tags = {
-            "artist": self.get_artist(metadata_gid["artist"]),
-            "comment": f'https://open.spotify.com/track/{metadata_gid["canonical_uri"].split(":")[-1]}',
-            "isrc": isrc.get("id") if isrc is not None else None,
-            "label": metadata_gid["album"].get("label"),
-            "lyrics": lyrics_unsynced,
-            "media_type": media_type,
-            "rating": 1 if metadata_gid.get("explicit") else 0,
-            "title": metadata_gid["name"],
-            "release_date": self.get_release_date_tag(release_date_datetime_obj),
-        }
-        if album_metadata:
-            tags = {
-                **tags,
-                "compilation": (
-                    True if album_metadata["album_type"] == "compilation" else False
-                ),
-                "album": album_metadata["name"],
-                "album_artist": self.get_artist(album_metadata["artists"]),
-                "copyright": next(
-                    (
-                        i["text"]
-                        for i in album_metadata["copyrights"]
-                        if i["type"] == "P"
-                    ),
-                    None,
-                ),
-                "disc": metadata_gid["disc_number"],
-                "disc_total": album_metadata["tracks"]["items"][-1]["disc_number"],
-                "track": metadata_gid["number"],
-                "track_total": max(
-                    i["track_number"]
-                    for i in album_metadata["tracks"]["items"]
-                    if i["disc_number"] == metadata_gid["disc_number"]
-                ),
-            }
-        tags["release_year"] = str(release_date_datetime_obj.year)
-        return tags
-
     def get_cover_url(self, metadata_gid: dict, size: str) -> str:
         return "https://i.scdn.co/image/" + next(
             i["file_id"]
