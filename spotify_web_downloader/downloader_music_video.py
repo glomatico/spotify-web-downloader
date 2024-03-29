@@ -11,10 +11,10 @@ from .models import VideoM3U8, VideoStreamInfo
 
 class DownloaderMusicVideo:
     M3U8_HEADER = """#EXTM3U
-    #EXT-X-VERSION:3
-    #EXT-X-PLAYLIST-TYPE:VOD
-    #EXT-X-MEDIA-SEQUENCE:0
-    #EXT-X-TARGETDURATION:1"""
+#EXT-X-VERSION:3
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-MEDIA-SEQUENCE:0
+#EXT-X-TARGETDURATION:1"""
 
     def __init__(
         self,
