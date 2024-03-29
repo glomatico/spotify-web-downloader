@@ -147,6 +147,8 @@ class DownloaderSong:
                 encrypted_path,
                 "-movflags",
                 "+faststart",
+                "-fflags",
+                "+bitexact",
                 "-c",
                 "copy",
                 fixed_path,
