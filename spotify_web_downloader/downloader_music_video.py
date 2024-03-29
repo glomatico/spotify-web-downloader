@@ -171,7 +171,7 @@ class DownloaderMusicVideo:
         segments = []
         first_segment = base_url + initialization_template_url_formated
         segments.append(first_segment)
-        for i in range(0, int(end_time_millis / 1000), segment_length):
+        for i in range(0, int(end_time_millis / 1000) + 1, segment_length):
             segment_template_url_formated = (
                 segment_template_url.replace("{{profile_id}}", str(profile_id))
                 .replace("{{segment_timestamp}}", str(i))
