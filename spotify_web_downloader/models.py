@@ -21,7 +21,7 @@ class DownloadQueueItem:
 @dataclass
 class VideoStreamInfo:
     base_url: str = None
-    iniatialization_template_url: str = None
+    initialization_template_url: str = None
     segment_template_url: str = None
     end_time_millis: int = None
     segment_length: int = None
