@@ -21,7 +21,6 @@ class DownloaderSong:
         template_file_multi_disc: str = "{disc}-{track:02d} {title}",
         download_mode: DownloadModeSong = DownloadModeSong.YTDLP,
         premium_quality: bool = False,
-        no_progress: bool = False,
     ):
         self.downloader = downloader
         self.template_folder_album = template_folder_album
@@ -30,7 +29,6 @@ class DownloaderSong:
         self.template_file_multi_disc = template_file_multi_disc
         self.download_mode = download_mode
         self.premium_quality = premium_quality
-        self.no_progress = no_progress
         self._set_codec()
 
     def _set_codec(self):
@@ -100,13 +98,13 @@ class DownloaderSong:
                 "allow_unplayable_formats": True,
                 "fixup": "never",
                 "allowed_extractors": ["generic"],
-                "noprogress": self.no_progress,
+                "noprogress": self.downloader.no_progress,
             }
         ) as ydl:
             ydl.download(stream_url)
 
     def download_aria2c(self, encrypted_path: Path, stream_url: str) -> None:
-        if self.no_progress:
+        if self.downloader.no_progress:
             subprocess_additional_args = {
                 "stdout": subprocess.DEVNULL,
                 "stderr": subprocess.DEVNULL,
