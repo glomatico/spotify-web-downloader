@@ -428,13 +428,19 @@ def main(
                         )
                     else:
                         logger.debug(f'Saving cover to "{cover_path}"')
-                        downloader_song.save_cover(cover_path, cover_url)
+                        downloader.save_cover(cover_path, cover_url)
                 elif spotify_api.is_premium == "false":
                     logger.error(
                         f"({queue_progress}) Cannot download music videos with a free account, skipping"
                     )
+                elif lrc_only:
+                    logger.warn(
+                        f"({queue_progress}) Music videos are not downloadable with "
+                        "current settings, skipping"
+                    )
                 else:
                     cover_url = downloader.get_cover_url(metadata_gid, "XXLARGE")
+                    logger.debug("Getting album metadata")
                     album_metadata = spotify_api.get_album(
                         spotify_api.gid_to_track_id(metadata_gid["album"]["gid"])
                     )
@@ -443,65 +449,77 @@ def main(
                         album_metadata,
                     )
                     final_path = downloader_music_video.get_final_path(tags)
+                    cover_path = downloader_music_video.get_cover_path(final_path)
                     if final_path.exists() and not overwrite:
                         logger.warning(
                             f'({queue_progress}) Video already exists at "{final_path}", skipping'
                         )
-                        continue
-                    logger.debug("Getting video manifest")
-                    manifest = downloader_music_video.get_manifest(metadata_gid)
-                    stream_info = downloader_music_video.get_video_stream_info(manifest)
-                    logger.debug("Getting decryption key")
-                    decryption_key = downloader_music_video.get_decryption_key(
-                        stream_info.pssh
-                    )
-                    m3u8 = downloader_music_video.get_m3u8(
-                        stream_info.base_url,
-                        stream_info.initialization_template_url,
-                        stream_info.segment_template_url,
-                        stream_info.end_time_millis,
-                        stream_info.segment_length,
-                        stream_info.profile_id_video,
-                        stream_info.profile_id_audio,
-                        stream_info.file_type_video,
-                        stream_info.file_type_audio,
-                    )
-                    m3u8_path_video = downloader_music_video.get_m3u8_path(
-                        track_id, "video"
-                    )
-                    encrypted_path_video = downloader.get_encrypted_path(
-                        track_id, "._video.ts"
-                    )
-                    logger.debug(f'Downloading video to "{encrypted_path_video}"')
-                    downloader_music_video.save_m3u8(m3u8.video, m3u8_path_video)
-                    downloader_music_video.download(
-                        m3u8_path_video,
-                        encrypted_path_video,
-                    )
-                    m3u8_path_audio = downloader_music_video.get_m3u8_path(
-                        track_id, "audio"
-                    )
-                    encrypted_path_audio = downloader.get_encrypted_path(
-                        track_id, "_audio.ts"
-                    )
-                    logger.debug(f"Downloading audio to {encrypted_path_audio}")
-                    downloader_music_video.save_m3u8(m3u8.audio, m3u8_path_audio)
-                    downloader_music_video.download(
-                        m3u8_path_audio,
-                        encrypted_path_audio,
-                    )
-                    fixed_path = downloader.get_fixed_path(track_id, ".mp4")
-                    logger.debug(f'Remuxing to "{fixed_path}"')
-                    downloader_music_video.fixup(
-                        decryption_key,
-                        encrypted_path_video,
-                        encrypted_path_audio,
-                        fixed_path,
-                    )
-                    logger.debug("Applying tags")
-                    downloader.apply_tags(fixed_path, tags, cover_url)
-                    logger.debug(f'Moving to "{final_path}"')
-                    downloader.move_to_final_path(fixed_path, final_path)
+                    else:
+                        logger.debug("Getting video manifest")
+                        manifest = downloader_music_video.get_manifest(metadata_gid)
+                        stream_info = downloader_music_video.get_video_stream_info(
+                            manifest
+                        )
+                        logger.debug("Getting decryption key")
+                        decryption_key = downloader_music_video.get_decryption_key(
+                            stream_info.pssh
+                        )
+                        m3u8 = downloader_music_video.get_m3u8(
+                            stream_info.base_url,
+                            stream_info.initialization_template_url,
+                            stream_info.segment_template_url,
+                            stream_info.end_time_millis,
+                            stream_info.segment_length,
+                            stream_info.profile_id_video,
+                            stream_info.profile_id_audio,
+                            stream_info.file_type_video,
+                            stream_info.file_type_audio,
+                        )
+                        m3u8_path_video = downloader_music_video.get_m3u8_path(
+                            track_id, "video"
+                        )
+                        encrypted_path_video = downloader.get_encrypted_path(
+                            track_id, "._video.ts"
+                        )
+                        logger.debug(f'Downloading video to "{encrypted_path_video}"')
+                        downloader_music_video.save_m3u8(m3u8.video, m3u8_path_video)
+                        downloader_music_video.download(
+                            m3u8_path_video,
+                            encrypted_path_video,
+                        )
+                        m3u8_path_audio = downloader_music_video.get_m3u8_path(
+                            track_id, "audio"
+                        )
+                        encrypted_path_audio = downloader.get_encrypted_path(
+                            track_id, "_audio.ts"
+                        )
+                        logger.debug(f"Downloading audio to {encrypted_path_audio}")
+                        downloader_music_video.save_m3u8(m3u8.audio, m3u8_path_audio)
+                        downloader_music_video.download(
+                            m3u8_path_audio,
+                            encrypted_path_audio,
+                        )
+                        fixed_path = downloader.get_fixed_path(track_id, ".mp4")
+                        logger.debug(f'Remuxing to "{fixed_path}"')
+                        downloader_music_video.fixup(
+                            decryption_key,
+                            encrypted_path_video,
+                            encrypted_path_audio,
+                            fixed_path,
+                        )
+                        logger.debug("Applying tags")
+                        downloader.apply_tags(fixed_path, tags, cover_url)
+                        logger.debug(f'Moving to "{final_path}"')
+                        downloader.move_to_final_path(fixed_path, final_path)
+                    if save_cover:
+                        cover_path = downloader_music_video.get_cover_path(final_path)
+                        if cover_path.exists() and not overwrite:
+                            logger.debug(
+                                f'Cover already exists at "{cover_path}", skipping'
+                            )
+                        else:
+                            logger.debug(f'Saving cover to "{cover_path}"')
+                            downloader.save_cover(cover_path, cover_url)
             except Exception:
                 error_count += 1
                 logger.error(

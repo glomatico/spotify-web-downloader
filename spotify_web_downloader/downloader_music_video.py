@@ -110,6 +110,9 @@ class DownloaderMusicVideo:
     def get_m3u8_path(self, track_id: str, type: str) -> Path:
         return self.downloader.temp_path / f"{track_id}_{type}.m3u8"
 
+    def get_cover_path(self, final_path: Path) -> Path:
+        return final_path.with_suffix(".jpg")
+
     def get_m3u8_str(self, segments: list) -> str:
         return (
             self.M3U8_HEADER

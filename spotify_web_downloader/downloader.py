@@ -225,5 +225,9 @@ class Downloader:
         final_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(fixed_path, final_path)
 
+    @functools.lru_cache()
+    def save_cover(self, cover_path: Path, cover_url: str):
+        cover_path.write_bytes(self.get_image_bytes(cover_url))
+
     def cleanup_temp_path(self):
         shutil.rmtree(self.temp_path)

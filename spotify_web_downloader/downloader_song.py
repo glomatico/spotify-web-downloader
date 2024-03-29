@@ -229,10 +229,6 @@ class DownloaderSong:
     def get_lrc_path(self, final_path: Path) -> Path:
         return final_path.with_suffix(".lrc")
 
-    @functools.lru_cache()
-    def save_cover(self, cover_path: Path, cover_url: str):
-        cover_path.write_bytes(self.downloader.get_image_bytes(cover_url))
-
     def save_lrc(self, lrc_path: Path, lyrics_synced: str):
         if lyrics_synced:
             lrc_path.parent.mkdir(parents=True, exist_ok=True)
