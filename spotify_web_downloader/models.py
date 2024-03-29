@@ -32,6 +32,7 @@ class VideoStreamInfo:
     pssh: str = None
 
 
+@dataclass
 class VideoM3U8:
     video: str = None
     audio: str = None
