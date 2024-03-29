@@ -30,7 +30,7 @@ class SpotifyApi:
 
     def __init__(
         self,
-        cookies_path: Path = None,
+        cookies_path: Path = Path("./cookies.txt"),
     ):
         self.cookies_path = cookies_path
         self._setup_session()
