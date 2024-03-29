@@ -1,14 +1,15 @@
 # Spotify Web Downloader
-A Python script to download songs/albums/playlists directly from Spotify in 256kbps/128kbps AAC.
+A Python script to download songs/music videos/albums/playlists directly from Spotify.
 
 ## Features
-* Download songs in 128kbps AAC or 256kbps AAC with a premium account
+* Download songs in 128kbps AAC or in 256kbps AAC with a premium account
+* Download music videos with a premium account
 * Download synced lyrics
-* Highly customizable
+* Highly configurable
 
 ## Installation
 1. Install Python 3.7 or higher
-2. Add [FFmpeg](https://ffmpeg.org/download.html) to PATH
+2. Add [FFmpeg](https://ffmpeg.org/download.html) to your system PATH
     * Older versions of FFmpeg may not work
 3. Place your cookies in the same folder that you will run spotify-web-downloader as `cookies.txt`
     * You can export your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
@@ -77,8 +78,17 @@ The following variables can be used in the template folder/file and/or in the `e
 - `track_total`
 
 ### Download mode
-The following download modes are available:
+
+#### Songs
+The following options are available:
 * `ytdlp`
 * `aria2c`
     * Faster than `ytdlp`
     * Can be obtained from here: https://github.com/aria2/aria2/releases
+
+#### Videos
+The following options are available:
+* `ytdlp`
+* `nm38dlre`
+    * Faster than `ytdlp`
+    * Can be obtained from here: https://github.com/nilaoda/N_m3u8DL-RE/releases
