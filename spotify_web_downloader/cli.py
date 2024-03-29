@@ -479,7 +479,7 @@ def main(
                             track_id, "video"
                         )
                         encrypted_path_video = downloader.get_encrypted_path(
-                            track_id, "._video.ts"
+                            track_id, "_video.ts"
                         )
                         logger.debug(f'Downloading video to "{encrypted_path_video}"')
                         downloader_music_video.save_m3u8(m3u8.video, m3u8_path_video)
