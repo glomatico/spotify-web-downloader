@@ -6,6 +6,6 @@ class DownloadModeSong(Enum):
     ARIA2C = "aria2c"
 
 
-class DownloadModeMusicVideo(Enum):
+class DownloadModeVideo(Enum):
     YTDLP = "ydlp"
     NM3U8DLRE = "nm3u8dlre"
