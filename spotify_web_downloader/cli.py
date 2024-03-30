@@ -51,8 +51,7 @@ def load_config_file(
         return ctx
     if not ctx.params["config_path"].exists():
         write_default_config_file(ctx)
-    with open(ctx.params["config_path"], "r") as f:
-        config_file = dict(json.load(f))
+    config_file = dict(json.loads(ctx.params["config_path"].read_text()))
     for param in ctx.command.params:
         if (
             config_file.get(param.name) is not None
