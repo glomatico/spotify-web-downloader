@@ -56,7 +56,7 @@ class SpotifyApi:
         )
         home_page = self.session.get(self.SPOTIFY_HOME_PAGE_URL).text
         token = re.search(r'accessToken":"(.*?)"', home_page).group(1)
-        self.is_premium = re.search(r'isPremium":(.*?),', home_page).group(1)
+        self.is_premium = re.search(r'isPremium":(.*?),', home_page).group(1) == "true"
         self.session.headers.update(
             {
                 "authorization": f"Bearer {token}",
