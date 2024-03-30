@@ -331,7 +331,7 @@ def main(
         ):
             logger.critical(X_NOT_FOUND_STRING.format("nm3u8dlre", nm3u8dlre_path))
             return
-        if spotify_api.is_premium == "false" and premium_quality:
+        if not spotify_api.is_premium and premium_quality:
             logger.critical("Cannot download in premium quality with a free account")
             return
     error_count = 0
@@ -430,7 +430,7 @@ def main(
                     else:
                         logger.debug(f'Saving cover to "{cover_path}"')
                         downloader.save_cover(cover_path, cover_url)
-                elif spotify_api.is_premium == "false":
+                elif not spotify_api.is_premium:
                     logger.error(
                         f"({queue_progress}) Cannot download music videos with a free account, skipping"
                     )
@@ -453,7 +453,7 @@ def main(
                     cover_path = downloader_music_video.get_cover_path(final_path)
                     if final_path.exists() and not overwrite:
                         logger.warning(
-                            f'({queue_progress}) Video already exists at "{final_path}", skipping'
+                            f'({queue_progress}) Music video already exists at "{final_path}", skipping'
                         )
                     else:
                         logger.debug("Getting video manifest")
