@@ -348,6 +348,7 @@ def main(
                 f'({url_progress}) Failed to check "{url}"',
                 exc_info=print_exceptions,
             )
+            continue
         for queue_index, queue_item in enumerate(download_queue, start=1):
             queue_progress = f"Track {queue_index}/{len(download_queue)} from URL {url_index}/{len(urls)}"
             track = queue_item.metadata
