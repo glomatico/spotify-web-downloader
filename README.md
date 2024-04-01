@@ -17,7 +17,7 @@ A Python script to download songs/music videos/albums/playlists directly from Sp
     ```bash
     pip install spotify-web-downloader
     ```
-2. Place your cookies in the same directory you will run the script from as `cookies.txt`.
+2. Place your cookies in the same directory you will run the script from and name it `cookies.txt`
 
 ## Usage
 * Download a song
