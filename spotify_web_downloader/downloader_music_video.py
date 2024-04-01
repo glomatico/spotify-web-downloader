@@ -200,9 +200,6 @@ class DownloaderMusicVideo:
         tags = {
             "artist": self.downloader.get_artist(metadata_gid["artist"]),
             "comment": f'https://open.spotify.com/track/{metadata_gid["canonical_uri"].split(":")[-1]}',
-            "compilation": (
-                True if album_metadata["album_type"] == "compilation" else False
-            ),
             "copyright": next(
                 (i["text"] for i in album_metadata["copyrights"] if i["type"] == "P"),
                 None,
