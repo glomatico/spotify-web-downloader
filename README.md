@@ -7,18 +7,19 @@ A Python script to download songs/music videos/albums/playlists directly from Sp
 * Download synced lyrics
 * Highly configurable
 
+## Pre-requisites
+* The cookies file of your Spotify account (free or premium). You can get your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
+* FFmpeg on your system PATH. Older versions of FFmpeg may not work.
+* Python 3.7 or higher
+
 ## Installation
-1. Install Python 3.7 or higher
-2. Add [FFmpeg](https://ffmpeg.org/download.html) to your system PATH
-    * Older versions of FFmpeg may not work
-3. Place your cookies in the same folder that you will run spotify-web-downloader as `cookies.txt`
-    * You can export your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
-4. Install spotify-web-downloader using pip
+1. Install spotify-web-downloader using pip
     ```bash
     pip install spotify-web-downloader
     ```
+2. Place your cookies in the same directory you will run the script from as `cookies.txt`.
 
-## Examples
+## Usage
 * Download a song
     ```bash
     spotify-web-downloader "https://open.spotify.com/track/18gqCQzqYb0zvurQPlRkpo"
@@ -89,15 +90,13 @@ Music videos will be downloaded in the highest quality available, up to 1080p.
 
 ### Download mode
 
-#### Songs
-The following modes are available:
+The following modes are available for songs:
 * `ytdlp`
 * `aria2c`
     * Faster than `ytdlp`
     * Can be obtained from here: https://github.com/aria2/aria2/releases
 
-#### Videos
-The following modes are available:
+The following modes are available for videos:
 * `ytdlp`
 * `nm38dlre`
     * Faster than `ytdlp`
