@@ -112,7 +112,7 @@ class DownloaderSong:
             "disc": metadata_gid["disc_number"],
             "disc_total": album_metadata["tracks"]["items"][-1]["disc_number"],
             "isrc": isrc.get("id") if isrc is not None else None,
-            "label": metadata_gid["album"].get("label"),
+            "label": album_metadata.get("label"),
             "lyrics": lyrics_unsynced,
             "media_type": 1,
             "rating": 1 if metadata_gid.get("explicit") else 0,
