@@ -89,7 +89,6 @@ The following variables can be used in the template folder/file and/or in the `e
 Music videos will be downloaded in the highest quality available, up to 1080p.
 
 ### Download mode
-
 The following modes are available for songs:
 * `ytdlp`
 * `aria2c`
