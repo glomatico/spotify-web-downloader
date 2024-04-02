@@ -177,9 +177,13 @@ class Downloader:
             for k, v in MP4_TAGS_MAP.items()
             if k not in self.exclude_tags_list and tags.get(k) is not None
         }
-        if not {"track", "track_total"} & set(self.exclude_tags_list):
+        if not {"track", "track_total"} & set(self.exclude_tags_list) and tags.get(
+            "track"
+        ):
             mp4_tags["trkn"] = [[0, 0]]
-        if not {"disc", "disc_total"} & set(self.exclude_tags_list):
+        if not {"disc", "disc_total"} & set(self.exclude_tags_list) and tags.get(
+            "disc"
+        ):
             mp4_tags["disk"] = [[0, 0]]
         if (
             "compilation" not in self.exclude_tags_list
