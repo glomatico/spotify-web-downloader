@@ -63,8 +63,8 @@ def load_config_file(
 
 
 @click.command()
-@click.version_option(__version__, "-v", "--version")
 @click.help_option("-h", "--help")
+@click.version_option(__version__, "-v", "--version")
 @click.argument(
     "urls",
     nargs=-1,
@@ -127,56 +127,56 @@ def load_config_file(
     "-c",
     type=Path,
     default=spotify_api_sig.parameters["cookies_path"].default,
-    help="Path to .txt cookies file",
+    help="Path to .txt cookies file.",
 )
 @click.option(
     "--output-path",
     "-o",
     type=Path,
     default=downloader_sig.parameters["output_path"].default,
-    help="Path to output directory",
+    help="Path to output directory.",
 )
 @click.option(
     "--temp-path",
     type=Path,
     default=downloader_sig.parameters["temp_path"].default,
-    help="Path to temporary directory",
+    help="Path to temporary directory.",
 )
 @click.option(
     "--wvd-path",
     type=Path,
     default=downloader_sig.parameters["wvd_path"].default,
-    help="Path to .wvd file",
+    help="Path to .wvd file.",
 )
 @click.option(
     "--ffmpeg-path",
     type=str,
     default=downloader_sig.parameters["ffmpeg_path"].default,
-    help="Path to ffmpeg binary",
+    help="Path to FFmpeg binary.",
 )
 @click.option(
     "--aria2c-path",
     type=str,
     default=downloader_sig.parameters["aria2c_path"].default,
-    help="Path to aria2c binary",
+    help="Path to aria2c binary.",
 )
 @click.option(
     "--nm3u8dlre-path",
     type=str,
     default=downloader_sig.parameters["nm3u8dlre_path"].default,
-    help="Path to nm3u8dlre binary",
+    help="Path to N_m3u8DL-RE binary.",
 )
 @click.option(
     "--date-tag-template",
     type=str,
     default=downloader_sig.parameters["date_tag_template"].default,
-    help="Date tag template",
+    help="Date tag template.",
 )
 @click.option(
     "--exclude-tags",
     type=str,
     default=downloader_sig.parameters["exclude_tags"].default,
-    help="Comma-separated tags to exclude",
+    help="Comma-separated tags to exclude.",
 )
 @click.option(
     "--truncate",
@@ -246,8 +246,6 @@ def load_config_file(
     callback=load_config_file,
     help="Do not use a config file.",
 )
-@click.version_option(__version__, "-v", "--version")
-@click.help_option("-h", "--help")
 def main(
     urls: list[str],
     download_music_video: bool,
