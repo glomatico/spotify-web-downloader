@@ -8,8 +8,10 @@ A Python script to download songs/music videos/albums/playlists directly from Sp
 * Highly configurable
 
 ## Pre-requisites
-* The cookies file of your Spotify account (free or premium). You can get your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
-* FFmpeg on your system PATH. Older versions of FFmpeg may not work.
+* The cookies file of your Spotify account (free or premium).
+    * You can get your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
+* FFmpeg on your system PATH.
+    * Older versions of FFmpeg may not work.
 * Python 3.7 or higher
 
 ## Installation
