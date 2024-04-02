@@ -32,8 +32,6 @@ class Downloader:
         exclude_tags: str = None,
         truncate: int = 40,
         no_progress: bool = False,
-        *args,
-        **kwargs,
     ):
         self.spotify_api = spotify_api
         self.output_path = output_path
