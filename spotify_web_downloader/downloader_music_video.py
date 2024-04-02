@@ -30,6 +30,14 @@ class DownloaderMusicVideo:
         self.template_file = template_file
         self.download_mode = download_mode
 
+    def get_music_video_from_song_id(self, track_id: str, artist_id: str) -> dict:
+        now_playing_view = self.downloader.spotify_api.get_now_playing_view(
+            track_id, artist_id
+        )
+        return now_playing_view["data"]["trackUnion"]["relatedVideos"]["items"][0][
+            "trackOfVideo"
+        ]["data"]["uri"].split(":")[-1]
+
     def get_final_path(self, tags: dict) -> Path:
         final_path_folder = self.template_folder.split("/")
         final_path_file = self.template_file.split("/")
