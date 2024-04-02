@@ -72,6 +72,11 @@ def load_config_file(
     required=True,
 )
 @click.option(
+    "--download-music-video",
+    is_flag=True,
+    help="Attempt to download music videos from songs (can lead to incorrect results).",
+)
+@click.option(
     "--save-cover",
     "-s",
     is_flag=True,
@@ -245,6 +250,7 @@ def load_config_file(
 @click.help_option("-h", "--help")
 def main(
     urls: list[str],
+    download_music_video: bool,
     save_cover: bool,
     overwrite: bool,
     read_urls_as_txt: bool,
@@ -333,6 +339,9 @@ def main(
         if not spotify_api.is_premium and premium_quality:
             logger.critical("Cannot download in premium quality with a free account")
             return
+        if download_mode_video and not spotify_api.is_premium:
+            logger.critical("Cannot download music videos with a free account")
+            return
     error_count = 0
     if read_urls_as_txt:
         urls = [url.strip() for url in Path(urls[0]).read_text().splitlines()]
@@ -357,6 +366,18 @@ def main(
                 logger.debug("Getting GID metadata")
                 gid = spotify_api.track_id_to_gid(track_id)
                 metadata_gid = spotify_api.get_gid_metadata(gid)
+                if download_music_video:
+                    music_video_id = (
+                        downloader_music_video.get_music_video_from_song_id(
+                            track_id, queue_item.metadata["artists"][0]["id"]
+                        )
+                    )
+                    metadata_gid = spotify_api.get_gid_metadata(
+                        spotify_api.track_id_to_gid(music_video_id)
+                    )
+                    logger.warning(
+                        f"Switching to download music video with title \"{metadata_gid['name']}\""
+                    )
                 if not metadata_gid.get("original_video"):
                     if metadata_gid.get("has_lyrics"):
                         logger.debug("Getting lyrics")
