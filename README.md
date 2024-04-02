@@ -15,7 +15,7 @@ A Python script to download songs/music videos/albums/playlists directly from Sp
 * Python 3.7 or higher
 
 ## Installation
-1. Install spotify-web-downloader package using pip
+1. Install the package `spotify-web-downloader` using pip
     ```bash
     pip install spotify-web-downloader
     ```
