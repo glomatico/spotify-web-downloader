@@ -83,6 +83,7 @@ The following variables can be used in the template folder/file and/or in the `e
 - `media_type`
 - `rating`
 - `release_date`
+- `release_year`
 - `title`
 - `track`
 - `track_total`
