@@ -101,7 +101,6 @@ def load_config_file(
 )
 @click.option(
     "--no-lrc",
-    "-n",
     is_flag=True,
     help="Don't download the synced lyrics.",
 )
