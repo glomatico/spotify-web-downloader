@@ -88,7 +88,7 @@ The following variables can be used in the template folder/file and/or in the `e
 - `track_total`
 
 ### Music videos quality
-Music videos will be downloaded in the highest quality available in H.254/AAC, up to 1080p.
+Music videos will be downloaded in the highest quality available in H.264/AAC, up to 1080p.
 
 ### Download mode
 The following modes are available for songs:
@@ -99,6 +99,6 @@ The following modes are available for songs:
 
 The following modes are available for videos:
 * `ytdlp`
-* `nm38dlre`
+* `nm3u8dlre`
     * Faster than `ytdlp`
     * Can be obtained from here: https://github.com/nilaoda/N_m3u8DL-RE/releases
