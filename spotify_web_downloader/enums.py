@@ -2,10 +2,10 @@ from enum import Enum
 
 
 class DownloadModeSong(Enum):
-    YTDLP = "ydlp"
+    YTDLP = "ytdlp"
     ARIA2C = "aria2c"
 
 
 class DownloadModeVideo(Enum):
-    YTDLP = "ydlp"
+    YTDLP = "ytdlp"
     NM3U8DLRE = "nm3u8dlre"

@@ -312,7 +312,7 @@ def main(
         template_file_music_video,
         download_mode_video,
     )
-    if not no_lrc:
+    if not lrc_only:
         if wvd_path and not wvd_path.exists():
             logger.critical(X_NOT_FOUND_STRING.format(".wvd file", wvd_path))
             return
