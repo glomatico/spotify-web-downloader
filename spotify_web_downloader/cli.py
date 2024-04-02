@@ -368,15 +368,21 @@ def main(
                 metadata_gid = spotify_api.get_gid_metadata(gid)
                 if download_music_video:
                     music_video_id = (
-                        downloader_music_video.get_music_video_from_song_id(
+                        downloader_music_video.get_music_video_id_from_song_id(
                             track_id, queue_item.metadata["artists"][0]["id"]
                         )
                     )
+                    if not music_video_id:
+                        logger.warning(
+                            f"({queue_progress}) No music video alternative found, skipping"
+                        )
+                        continue
                     metadata_gid = spotify_api.get_gid_metadata(
                         spotify_api.track_id_to_gid(music_video_id)
                     )
                     logger.warning(
-                        f"Switching to download music video with title \"{metadata_gid['name']}\""
+                        f"({queue_progress}) Switching to download music video "
+                        f"with title \"{metadata_gid['name']}\""
                     )
                 if not metadata_gid.get("original_video"):
                     if metadata_gid.get("has_lyrics"):
