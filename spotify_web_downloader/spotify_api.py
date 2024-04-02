@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import json
 import re
 import time
 from http.cookiejar import MozillaCookieJar
@@ -26,6 +27,7 @@ class SpotifyApi:
         "{file_id}?version=10000000&product=9&platform=39&alt=json"
     )
     METADATA_API_URL = "https://api.spotify.com/v1/{type}/{track_id}"
+    PATHFINDER_API_URL = "https://api-partner.spotify.com/pathfinder/v1/query"
     EXTEND_TRACK_COLLECTION_WAIT_TIME = 0.5
 
     def __init__(
@@ -167,3 +169,29 @@ class SpotifyApi:
         if extend:
             playlist = self.extend_track_collection(playlist)
         return playlist
+
+    def get_now_playing_view(self, track_id: str, artist_id: str) -> dict:
+        response = self.session.get(
+            self.PATHFINDER_API_URL,
+            params={
+                "operationName": "queryNpvArtist",
+                "variables": json.dumps(
+                    {
+                        "artistUri": f"spotify:artist:{artist_id}",
+                        "trackUri": f"spotify:track:{track_id}",
+                        "enableCredits": True,
+                        "enableRelatedVideos": True,
+                    }
+                ),
+                "extensions": json.dumps(
+                    {
+                        "persistedQuery": {
+                            "version": 1,
+                            "sha256Hash": "4ec4ae302c609a517cab6b8868f601cd3457c751c570ab12e988723cc036284f",
+                        }
+                    }
+                ),
+            },
+        )
+        self._check_response(response)
+        return response.json()
