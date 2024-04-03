@@ -87,6 +87,7 @@ class DownloaderSong:
         self,
         metadata_gid: dict,
         album_metadata: dict,
+        track_credits: dict,
         lyrics_unsynced: str,
     ) -> dict:
         isrc = None
@@ -97,6 +98,16 @@ class DownloaderSong:
         release_date_datetime_obj = self.downloader.get_release_date_datetime_obj(
             metadata_gid
         )
+        producers = next(
+            role
+            for role in track_credits["roleCredits"]
+            if role["roleTitle"] == "Producers"
+        )["artists"]
+        composers = next(
+            role
+            for role in track_credits["roleCredits"]
+            if role["roleTitle"] == "Writers"
+        )["artists"]
         tags = {
             "album": album_metadata["name"],
             "album_artist": self.downloader.get_artist(album_metadata["artists"]),
@@ -105,6 +116,7 @@ class DownloaderSong:
             "compilation": (
                 True if album_metadata["album_type"] == "compilation" else False
             ),
+            "composer": self.downloader.get_artist(composers) if composers else None,
             "copyright": next(
                 (i["text"] for i in album_metadata["copyrights"] if i["type"] == "P"),
                 None,
@@ -115,6 +127,7 @@ class DownloaderSong:
             "label": album_metadata.get("label"),
             "lyrics": lyrics_unsynced,
             "media_type": 1,
+            "producer": self.downloader.get_artist(producers) if producers else None,
             "rating": 1 if metadata_gid.get("explicit") else 0,
             "release_date": self.downloader.get_release_date_tag(
                 release_date_datetime_obj
