@@ -72,6 +72,7 @@ The following variables can be used in the template folder/file and/or in the `e
 - `artist`
 - `comment`
 - `compilation`
+- `composer`
 - `copyright`
 - `cover`
 - `disc`
@@ -80,6 +81,7 @@ The following variables can be used in the template folder/file and/or in the `e
 - `label`
 - `lyrics`
 - `media_type`
+- `producer`
 - `rating`
 - `release_date`
 - `release_year`
