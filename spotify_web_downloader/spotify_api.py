@@ -28,6 +28,9 @@ class SpotifyApi:
     )
     METADATA_API_URL = "https://api.spotify.com/v1/{type}/{track_id}"
     PATHFINDER_API_URL = "https://api-partner.spotify.com/pathfinder/v1/query"
+    TRACK_CREDITS_API_URL = (
+        "https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{track_id}/credits"
+    )
     EXTEND_TRACK_COLLECTION_WAIT_TIME = 0.5
 
     def __init__(
@@ -192,6 +195,13 @@ class SpotifyApi:
                     }
                 ),
             },
+        )
+        self._check_response(response)
+        return response.json()
+
+    def get_track_credits(self, track_id: str) -> dict:
+        response = self.session.get(
+            self.TRACK_CREDITS_API_URL.format(track_id=track_id)
         )
         self._check_response(response)
         return response.json()

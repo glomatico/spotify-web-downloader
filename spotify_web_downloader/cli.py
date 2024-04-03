@@ -391,9 +391,12 @@ def main(
                     album_metadata = spotify_api.get_album(
                         spotify_api.gid_to_track_id(metadata_gid["album"]["gid"])
                     )
+                    logger.debug("Getting track credits")
+                    track_credits = spotify_api.get_track_credits(track_id)
                     tags = downloader_song.get_tags(
                         metadata_gid,
                         album_metadata,
+                        track_credits,
                         lyrics.unsynced,
                     )
                     final_path = downloader_song.get_final_path(tags)
