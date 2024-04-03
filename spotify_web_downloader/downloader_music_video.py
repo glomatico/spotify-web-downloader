@@ -204,6 +204,7 @@ class DownloaderMusicVideo:
         metadata_gid: dict,
         album_metadata: dict,
         track_credits: dict,
+        track_id: str,
     ) -> dict:
         isrc = None
         if metadata_gid.get("external_id"):
@@ -239,7 +240,7 @@ class DownloaderMusicVideo:
             "release_date": self.downloader.get_release_date_tag(
                 release_date_datetime_obj
             ),
-            "url": f'https://open.spotify.com/track/{metadata_gid["canonical_uri"].split(":")[-1]}',
+            "url": f"https://open.spotify.com/track/{track_id}",
         }
         tags["release_year"] = str(release_date_datetime_obj.year)
         return tags

@@ -89,6 +89,7 @@ class DownloaderSong:
         album_metadata: dict,
         track_credits: dict,
         lyrics_unsynced: str,
+        track_id: str,
     ) -> dict:
         isrc = None
         if metadata_gid.get("external_id"):
@@ -139,7 +140,7 @@ class DownloaderSong:
                 for i in album_metadata["tracks"]["items"]
                 if i["disc_number"] == metadata_gid["disc_number"]
             ),
-            "url": f'https://open.spotify.com/track/{metadata_gid["canonical_uri"].split(":")[-1]}',
+            "url": f"https://open.spotify.com/track/{track_id}",
         }
         return tags
 
