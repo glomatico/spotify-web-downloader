@@ -70,7 +70,6 @@ The following variables can be used in the template folder/file and/or in the `e
 - `album`
 - `album_artist`
 - `artist`
-- `comment`
 - `compilation`
 - `composer`
 - `copyright`
@@ -88,6 +87,7 @@ The following variables can be used in the template folder/file and/or in the `e
 - `title`
 - `track`
 - `track_total`
+- `url`
 
 ### Music videos quality
 Music videos will be downloaded in the highest quality available in H.264/AAC, up to 1080p.
