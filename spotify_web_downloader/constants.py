@@ -11,7 +11,6 @@ MP4_TAGS_MAP = {
     "album": "\xa9alb",
     "album_artist": "aART",
     "artist": "\xa9ART",
-    "comment": "\xa9cmt",
     "composer": "\xa9wrt",
     "copyright": "cprt",
     "lyrics": "\xa9lyr",
@@ -20,6 +19,7 @@ MP4_TAGS_MAP = {
     "rating": "rtng",
     "release_date": "\xa9day",
     "title": "\xa9nam",
+    "url": "\xa9url",
 }
 
 X_NOT_FOUND_STRING = "{} not found at {}"

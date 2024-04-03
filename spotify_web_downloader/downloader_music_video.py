@@ -214,7 +214,6 @@ class DownloaderMusicVideo:
         )
         tags = {
             "artist": self.downloader.get_artist(metadata_gid["artist"]),
-            "comment": f'https://open.spotify.com/track/{metadata_gid["canonical_uri"].split(":")[-1]}',
             "copyright": next(
                 (i["text"] for i in album_metadata["copyrights"] if i["type"] == "P"),
                 None,
@@ -227,6 +226,7 @@ class DownloaderMusicVideo:
             "release_date": self.downloader.get_release_date_tag(
                 release_date_datetime_obj
             ),
+            "url": f'https://open.spotify.com/track/{metadata_gid["canonical_uri"].split(":")[-1]}',
         }
         tags["release_year"] = str(release_date_datetime_obj.year)
         return tags

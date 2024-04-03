@@ -112,7 +112,6 @@ class DownloaderSong:
             "album": album_metadata["name"],
             "album_artist": self.downloader.get_artist(album_metadata["artists"]),
             "artist": self.downloader.get_artist(metadata_gid["artist"]),
-            "comment": f'https://open.spotify.com/track/{metadata_gid["canonical_uri"].split(":")[-1]}',
             "compilation": (
                 True if album_metadata["album_type"] == "compilation" else False
             ),
@@ -140,6 +139,7 @@ class DownloaderSong:
                 for i in album_metadata["tracks"]["items"]
                 if i["disc_number"] == metadata_gid["disc_number"]
             ),
+            "url": f'https://open.spotify.com/track/{metadata_gid["canonical_uri"].split(":")[-1]}',
         }
         return tags
 
