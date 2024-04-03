@@ -398,7 +398,6 @@ def main(
                         album_metadata,
                         track_credits,
                         lyrics.unsynced,
-                        track_id,
                     )
                     final_path = downloader_song.get_final_path(tags)
                     lrc_path = downloader_song.get_lrc_path(final_path)
@@ -478,7 +477,6 @@ def main(
                         metadata_gid,
                         album_metadata,
                         track_credits,
-                        track_id,
                     )
                     final_path = downloader_music_video.get_final_path(tags)
                     cover_path = downloader_music_video.get_cover_path(final_path)
