@@ -203,6 +203,7 @@ class DownloaderMusicVideo:
         self,
         metadata_gid: dict,
         album_metadata: dict,
+        track_credits: dict,
     ) -> dict:
         isrc = None
         if metadata_gid.get("external_id"):
@@ -212,8 +213,19 @@ class DownloaderMusicVideo:
         release_date_datetime_obj = self.downloader.get_release_date_datetime_obj(
             metadata_gid
         )
+        producers = next(
+            role
+            for role in track_credits["roleCredits"]
+            if role["roleTitle"] == "Producers"
+        )["artists"]
+        composers = next(
+            role
+            for role in track_credits["roleCredits"]
+            if role["roleTitle"] == "Writers"
+        )["artists"]
         tags = {
             "artist": self.downloader.get_artist(metadata_gid["artist"]),
+            "composer": self.downloader.get_artist(composers) if composers else None,
             "copyright": next(
                 (i["text"] for i in album_metadata["copyrights"] if i["type"] == "P"),
                 None,
@@ -221,6 +233,7 @@ class DownloaderMusicVideo:
             "isrc": isrc.get("id") if isrc is not None else None,
             "label": metadata_gid["album"].get("label"),
             "media_type": 6,
+            "producer": self.downloader.get_artist(producers) if producers else None,
             "rating": 1 if metadata_gid.get("explicit") else 0,
             "title": album_metadata["name"],
             "release_date": self.downloader.get_release_date_tag(

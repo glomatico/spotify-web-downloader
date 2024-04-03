@@ -471,9 +471,12 @@ def main(
                     album_metadata = spotify_api.get_album(
                         spotify_api.gid_to_track_id(metadata_gid["album"]["gid"])
                     )
+                    logger.debug("Getting track credits")
+                    track_credits = spotify_api.get_track_credits(track_id)
                     tags = downloader_music_video.get_tags(
                         metadata_gid,
                         album_metadata,
+                        track_credits,
                     )
                     final_path = downloader_music_video.get_final_path(tags)
                     cover_path = downloader_music_video.get_cover_path(final_path)
