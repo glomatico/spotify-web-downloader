@@ -336,7 +336,7 @@ def main(
         if not spotify_api.is_premium and premium_quality:
             logger.critical("Cannot download in premium quality with a free account")
             return
-        if download_mode_video and not spotify_api.is_premium:
+        if not spotify_api.is_premium and download_music_video:
             logger.critical("Cannot download music videos with a free account")
             return
     error_count = 0
