@@ -259,20 +259,13 @@ class DownloaderMusicVideo:
                 "allow_unplayable_formats": True,
                 "fixup": "never",
                 "allowed_extractors": ["generic"],
-                "noprogress": self.downloader.no_progress,
+                "noprogress": self.downloader.quiet,
                 "enable_file_urls": True,
             }
         ) as ydl:
             ydl.download(m3u8_path.resolve().as_uri())
 
     def download_nm3u8dlre(self, m3u8_path: Path, encrypted_path: Path) -> None:
-        if self.downloader.no_progress:
-            subprocess_additional_args = {
-                "stdout": subprocess.DEVNULL,
-                "stderr": subprocess.DEVNULL,
-            }
-        else:
-            subprocess_additional_args = {}
         encrypted_path.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(
             [
@@ -292,7 +285,7 @@ class DownloaderMusicVideo:
                 encrypted_path.parent,
             ],
             check=True,
-            **subprocess_additional_args,
+            **self.downloader.subprocess_additional_args,
         )
 
     def fixup(
@@ -323,4 +316,5 @@ class DownloaderMusicVideo:
                 fixed_path,
             ],
             check=True,
+            **self.downloader.subprocess_additional_args,
         )

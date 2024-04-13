@@ -4,6 +4,7 @@ import datetime
 import functools
 import re
 import shutil
+import subprocess
 from pathlib import Path
 
 import requests
@@ -31,7 +32,7 @@ class Downloader:
         date_tag_template: str = "%Y-%m-%dT%H:%M:%SZ",
         exclude_tags: str = None,
         truncate: int = 40,
-        no_progress: bool = False,
+        quiet: bool = False,
     ):
         self.spotify_api = spotify_api
         self.output_path = output_path
@@ -43,10 +44,11 @@ class Downloader:
         self.date_tag_template = date_tag_template
         self.exclude_tags = exclude_tags
         self.truncate = truncate
-        self.no_progress = no_progress
+        self.quiet = quiet
         self._set_binaries_full_path()
         self._set_exclude_tags_list()
         self._set_truncate()
+        self._set_subprocess_additional_args()
 
     def _set_binaries_full_path(self):
         self.ffmpeg_path_full = shutil.which(self.ffmpeg_path)
@@ -62,6 +64,15 @@ class Downloader:
 
     def _set_truncate(self):
         self.truncate = None if self.truncate < 4 else self.truncate
+
+    def _set_subprocess_additional_args(self):
+        if self.silent:
+            self.subprocess_additional_args = {
+                "stdout": subprocess.DEVNULL,
+                "stderr": subprocess.DEVNULL,
+            }
+        else:
+            self.subprocess_additional_args = {}
 
     def set_cdm(self) -> None:
         if self.wvd_path:

@@ -158,19 +158,12 @@ class DownloaderSong:
                 "allow_unplayable_formats": True,
                 "fixup": "never",
                 "allowed_extractors": ["generic"],
-                "noprogress": self.downloader.no_progress,
+                "noprogress": self.downloader.quiet,
             }
         ) as ydl:
             ydl.download(stream_url)
 
     def download_aria2c(self, encrypted_path: Path, stream_url: str) -> None:
-        if self.downloader.no_progress:
-            subprocess_additional_args = {
-                "stdout": subprocess.DEVNULL,
-                "stderr": subprocess.DEVNULL,
-            }
-        else:
-            subprocess_additional_args = {}
         encrypted_path.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(
             [
@@ -185,7 +178,7 @@ class DownloaderSong:
                 encrypted_path,
             ],
             check=True,
-            **subprocess_additional_args,
+            **self.downloader.subprocess_additional_args,
         )
         print("\r", end="")
 
@@ -212,6 +205,7 @@ class DownloaderSong:
                 fixed_path,
             ],
             check=True,
+            **self.downloader.subprocess_additional_args,
         )
 
     def get_lyrics_synced_timestamp_lrc(self, time: int) -> str:
