@@ -2,7 +2,7 @@
 A Python script to download songs/music videos/albums/playlists directly from Spotify.
 
 ## Features
-* Download songs in 128kbps AAC or in 256kbps AAC with a premium account
+* Download songs in AAC 128kbps or in AAC 256kbps with a premium account
 * Download music videos with a premium account
 * Download synced lyrics
 * Highly configurable
