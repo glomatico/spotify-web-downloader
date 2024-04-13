@@ -66,7 +66,7 @@ class Downloader:
         self.truncate = None if self.truncate < 4 else self.truncate
 
     def _set_subprocess_additional_args(self):
-        if self.silent:
+        if self.quiet:
             self.subprocess_additional_args = {
                 "stdout": subprocess.DEVNULL,
                 "stderr": subprocess.DEVNULL,
