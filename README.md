@@ -7,21 +7,28 @@ A Python script to download songs/music videos/albums/playlists directly from Sp
 * Download synced lyrics
 * Highly configurable
 
-## Pre-requisites
+## Prerequisites
+* Python 3.8 or higher
 * The cookies file of your Spotify account (free or premium)
-    * You can get your cookies by using this Google Chrome extension on Spotify website: https://chrome.google.com/webstore/detail/open-cookiestxt/gdocmgbfkjnnpapoeobnolbbkoibbcif. Make sure to be logged in.
+    * You can get your cookies by using one of the following extensions on your browser of choice at the Spotify website with your account signed in:
+        * Firefox: https://addons.mozilla.org/addon/export-cookies-txt
+        * Chromium based browsers: https://chrome.google.com/webstore/detail/gdocmgbfkjnnpapoeobnolbbkoibbcif
 * FFmpeg on your system PATH
     * Older versions of FFmpeg may not work.
-* Python 3.7 or higher
 
 ## Installation
 1. Install the package `spotify-web-downloader` using pip
     ```bash
     pip install spotify-web-downloader
     ```
-2. Place your cookies in the same directory you will run the script from and name it `cookies.txt`
+2. Place your cookies file in the directory from which you will be running spotify-web-downloader and name it `cookies.txt`.
 
 ## Usage
+```bash
+spotify_web_downloader [OPTIONS] URLS...
+```
+
+#### Examples
 * Download a song
     ```bash
     spotify-web-downloader "https://open.spotify.com/track/18gqCQzqYb0zvurQPlRkpo"
@@ -92,7 +99,7 @@ The following variables can be used in the template folder/file and/or in the `e
 ### Music videos quality
 Music videos will be downloaded in the highest quality available in H.264/AAC, up to 1080p.
 
-### Download mode
+### Download modes
 The following modes are available for songs:
 * `ytdlp`
 * `aria2c`
