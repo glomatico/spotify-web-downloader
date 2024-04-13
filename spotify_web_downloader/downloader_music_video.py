@@ -259,7 +259,7 @@ class DownloaderMusicVideo:
                 "allow_unplayable_formats": True,
                 "fixup": "never",
                 "allowed_extractors": ["generic"],
-                "noprogress": self.downloader.quiet,
+                "noprogress": self.downloader.silence,
                 "enable_file_urls": True,
             }
         ) as ydl:

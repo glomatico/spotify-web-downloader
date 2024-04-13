@@ -32,7 +32,7 @@ class Downloader:
         date_tag_template: str = "%Y-%m-%dT%H:%M:%SZ",
         exclude_tags: str = None,
         truncate: int = 40,
-        quiet: bool = False,
+        silence: bool = False,
     ):
         self.spotify_api = spotify_api
         self.output_path = output_path
@@ -44,7 +44,7 @@ class Downloader:
         self.date_tag_template = date_tag_template
         self.exclude_tags = exclude_tags
         self.truncate = truncate
-        self.quiet = quiet
+        self.silence = silence
         self._set_binaries_full_path()
         self._set_exclude_tags_list()
         self._set_truncate()
@@ -66,7 +66,7 @@ class Downloader:
         self.truncate = None if self.truncate < 4 else self.truncate
 
     def _set_subprocess_additional_args(self):
-        if self.quiet:
+        if self.silence:
             self.subprocess_additional_args = {
                 "stdout": subprocess.DEVNULL,
                 "stderr": subprocess.DEVNULL,

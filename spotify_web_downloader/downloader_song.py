@@ -158,7 +158,7 @@ class DownloaderSong:
                 "allow_unplayable_formats": True,
                 "fixup": "never",
                 "allowed_extractors": ["generic"],
-                "noprogress": self.downloader.quiet,
+                "noprogress": self.downloader.silence,
             }
         ) as ydl:
             ydl.download(stream_url)
