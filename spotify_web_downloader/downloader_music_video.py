@@ -320,8 +320,6 @@ class DownloaderMusicVideo:
                 "copy",
                 "-movflags",
                 "+faststart",
-                "-fflags",
-                "+bitexact",
                 fixed_path,
             ],
             check=True,
