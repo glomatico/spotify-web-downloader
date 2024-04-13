@@ -28,7 +28,7 @@ A Python script to download songs/music videos/albums/playlists directly from Sp
 spotify_web_downloader [OPTIONS] URLS...
 ```
 
-#### Examples
+### Examples
 * Download a song
     ```bash
     spotify-web-downloader "https://open.spotify.com/track/18gqCQzqYb0zvurQPlRkpo"
