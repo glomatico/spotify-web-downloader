@@ -1,5 +1,7 @@
 # Spotify Web Downloader
-A Python CLI app to download songs/music videos/albums/playlists directly from Spotify.
+A Python CLI app for downloading songs/music videos/albums/playlists directly from Spotify.
+
+**Discord Server:** https://discord.gg/aBjMEZ9tnq
 
 ## Features
 * Download songs in AAC 128kbps or in AAC 256kbps with a premium account
