@@ -65,6 +65,7 @@ def load_config_file(
 @click.command()
 @click.help_option("-h", "--help")
 @click.version_option(__version__, "-v", "--version")
+# CLI specific options
 @click.argument(
     "urls",
     nargs=-1,
@@ -121,6 +122,7 @@ def load_config_file(
     is_flag=True,
     help="Print exceptions.",
 )
+# API specific options
 @click.option(
     "--cookies-path",
     "-c",
@@ -128,6 +130,7 @@ def load_config_file(
     default=spotify_api_sig.parameters["cookies_path"].default,
     help="Path to .txt cookies file.",
 )
+# Downloader specific options
 @click.option(
     "--output-path",
     "-o",
@@ -183,6 +186,7 @@ def load_config_file(
     default=downloader_sig.parameters["truncate"].default,
     help="Maximum length of the file/folder names.",
 )
+# DownloaderSong specific options
 @click.option(
     "--template-folder-album",
     type=str,
@@ -220,6 +224,7 @@ def load_config_file(
     default=downloader_song_sig.parameters["premium_quality"].default,
     help="Download songs in premium quality.",
 )
+# DownloaderMusicVideo specific options
 @click.option(
     "--template-folder-music-video",
     type=str,
@@ -238,6 +243,7 @@ def load_config_file(
     default=downloader_music_video_sig.parameters["download_mode"].default,
     help="Download mode for videos.",
 )
+# This option should always be last
 @click.option(
     "--no-config-file",
     "-n",
