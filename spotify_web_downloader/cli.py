@@ -345,6 +345,8 @@ def main(
         template_file_music_video,
         download_mode_video,
     )
+    if not spotify_api.is_premium:
+        logger.warning("Free account detected, lyrics will not be downloaded")
     if not lrc_only:
         if wvd_path and not wvd_path.exists():
             logger.critical(X_NOT_FOUND_STRING.format(".wvd file", wvd_path))
@@ -415,7 +417,7 @@ def main(
                         f"with title \"{metadata_gid['name']}\""
                     )
                 if not metadata_gid.get("original_video"):
-                    if metadata_gid.get("has_lyrics"):
+                    if metadata_gid.get("has_lyrics") and spotify_api.is_premium:
                         logger.debug("Getting lyrics")
                         lyrics = downloader_song.get_lyrics(track_id)
                     else:
