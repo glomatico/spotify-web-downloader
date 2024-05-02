@@ -13,7 +13,7 @@ from .constants import *
 from .downloader import Downloader
 from .downloader_music_video import DownloaderMusicVideo
 from .downloader_song import DownloaderSong
-from .enums import DownloadModeSong, DownloadModeVideo
+from .enums import DownloadModeSong, DownloadModeVideo, RemuxMode
 from .models import Lyrics
 from .spotify_api import SpotifyApi
 
@@ -157,6 +157,18 @@ def load_config_file(
     help="Path to FFmpeg binary.",
 )
 @click.option(
+    "--mp4box-path",
+    type=str,
+    default=downloader_sig.parameters["mp4box_path"].default,
+    help="Path to MP4Box binary.",
+)
+@click.option(
+    "--mp4decrypt-path",
+    type=str,
+    default=downloader_sig.parameters["mp4decrypt_path"].default,
+    help="Path to mp4decrypt binary.",
+)
+@click.option(
     "--aria2c-path",
     type=str,
     default=downloader_sig.parameters["aria2c_path"].default,
@@ -167,6 +179,12 @@ def load_config_file(
     type=str,
     default=downloader_sig.parameters["nm3u8dlre_path"].default,
     help="Path to N_m3u8DL-RE binary.",
+)
+@click.option(
+    "--remux-mode",
+    type=RemuxMode,
+    default=downloader_sig.parameters["remux_mode"].default,
+    help="Remux mode.",
 )
 @click.option(
     "--date-tag-template",
@@ -267,8 +285,11 @@ def main(
     temp_path: Path,
     wvd_path: Path,
     ffmpeg_path: str,
+    mp4box_path: str,
+    mp4decrypt_path: str,
     aria2c_path: str,
     nm3u8dlre_path: str,
+    remux_mode: RemuxMode,
     date_tag_template: str,
     exclude_tags: str,
     truncate: int,
@@ -300,8 +321,11 @@ def main(
         temp_path,
         wvd_path,
         ffmpeg_path,
+        mp4box_path,
+        mp4decrypt_path,
         aria2c_path,
         nm3u8dlre_path,
+        remux_mode,
         date_tag_template,
         exclude_tags,
         truncate,
@@ -434,19 +458,21 @@ def main(
                         logger.debug("Getting stream URL")
                         stream_url = spotify_api.get_stream_url(file_id)
                         encrypted_path = downloader.get_encrypted_path(track_id, ".m4a")
+                        decrypted_path = downloader.get_decrypted_path(track_id, ".m4a")
                         logger.debug(f'Downloading to "{encrypted_path}"')
                         downloader_song.download(encrypted_path, stream_url)
-                        fixed_path = downloader.get_fixed_path(track_id, ".m4a")
-                        logger.debug(f'Remuxing to "{fixed_path}"')
-                        downloader_song.fixup(
-                            decryption_key,
+                        remuxed_path = downloader.get_remuxed_path(track_id, ".m4a")
+                        logger.debug(f'Decrypting/Remuxing to "{remuxed_path}"')
+                        downloader_song.remux(
                             encrypted_path,
-                            fixed_path,
+                            decrypted_path,
+                            remuxed_path,
+                            decryption_key,
                         )
                         logger.debug("Applying tags")
-                        downloader.apply_tags(fixed_path, tags, cover_url)
+                        downloader.apply_tags(remuxed_path, tags, cover_url)
                         logger.debug(f'Moving to "{final_path}"')
-                        downloader.move_to_final_path(fixed_path, final_path)
+                        downloader.move_to_final_path(remuxed_path, final_path)
                     if no_lrc or not lyrics.synced:
                         pass
                     elif lrc_path.exists() and not overwrite:
@@ -520,6 +546,9 @@ def main(
                         encrypted_path_video = downloader.get_encrypted_path(
                             track_id, "_video.ts"
                         )
+                        decrypted_path_video = downloader.get_decrypted_path(
+                            track_id, "_video.ts"
+                        )
                         logger.debug(f'Downloading video to "{encrypted_path_video}"')
                         downloader_music_video.save_m3u8(m3u8.video, m3u8_path_video)
                         downloader_music_video.download(
@@ -532,24 +561,29 @@ def main(
                         encrypted_path_audio = downloader.get_encrypted_path(
                             track_id, "_audio.ts"
                         )
+                        decrypted_path_audio = downloader.get_decrypted_path(
+                            track_id, "_audio.ts"
+                        )
                         logger.debug(f"Downloading audio to {encrypted_path_audio}")
                         downloader_music_video.save_m3u8(m3u8.audio, m3u8_path_audio)
                         downloader_music_video.download(
                             m3u8_path_audio,
                             encrypted_path_audio,
                         )
-                        fixed_path = downloader.get_fixed_path(track_id, ".mp4")
-                        logger.debug(f'Remuxing to "{fixed_path}"')
-                        downloader_music_video.fixup(
+                        remuxed_path = downloader.get_remuxed_path(track_id, ".m4v")
+                        logger.debug(f'Decrypting/Remuxing to "{remuxed_path}"')
+                        downloader_music_video.remux(
                             decryption_key,
                             encrypted_path_video,
                             encrypted_path_audio,
-                            fixed_path,
+                            decrypted_path_video,
+                            decrypted_path_audio,
+                            remuxed_path,
                         )
                         logger.debug("Applying tags")
-                        downloader.apply_tags(fixed_path, tags, cover_url)
+                        downloader.apply_tags(remuxed_path, tags, cover_url)
                         logger.debug(f'Moving to "{final_path}"')
-                        downloader.move_to_final_path(fixed_path, final_path)
+                        downloader.move_to_final_path(remuxed_path, final_path)
                     if save_cover:
                         cover_path = downloader_music_video.get_cover_path(final_path)
                         if cover_path.exists() and not overwrite:

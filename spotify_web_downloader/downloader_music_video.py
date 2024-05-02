@@ -7,7 +7,7 @@ from pywidevine import PSSH
 from yt_dlp import YoutubeDL
 
 from .downloader import Downloader
-from .enums import DownloadModeVideo
+from .enums import DownloadModeVideo, RemuxMode
 from .models import VideoM3U8, VideoStreamInfo
 
 
@@ -288,12 +288,45 @@ class DownloaderMusicVideo:
             **self.downloader.subprocess_additional_args,
         )
 
-    def fixup(
+    def remux(
         self,
         decryption_key: str,
         encrypted_path_video: Path,
         encrypted_path_audio: Path,
-        fixed_path: Path,
+        decrypted_path_video: Path,
+        decrypted_path_audio: Path,
+        remuxed_path: Path,
+    ):
+        if self.downloader.remux_mode == RemuxMode.FFMPEG:
+            self.remux_ffmpeg(
+                decryption_key,
+                encrypted_path_video,
+                encrypted_path_audio,
+                remuxed_path,
+            )
+        elif self.downloader.remux_mode == RemuxMode.MP4BOX:
+            self.downloader.decrypt_mp4decrypt(
+                encrypted_path_video,
+                decrypted_path_video,
+                decryption_key,
+            )
+            self.downloader.decrypt_mp4decrypt(
+                encrypted_path_audio,
+                decrypted_path_audio,
+                decryption_key,
+            )
+            self.remux_mp4box(
+                decrypted_path_video,
+                decrypted_path_audio,
+                remuxed_path,
+            )
+
+    def remux_ffmpeg(
+        self,
+        decryption_key: str,
+        encrypted_path_video: Path,
+        encrypted_path_audio: Path,
+        remuxed_path: Path,
     ) -> None:
         subprocess.run(
             [
@@ -313,7 +346,31 @@ class DownloaderMusicVideo:
                 "copy",
                 "-movflags",
                 "+faststart",
-                fixed_path,
+                remuxed_path,
+            ],
+            check=True,
+            **self.downloader.subprocess_additional_args,
+        )
+
+    def remux_mp4box(
+        self,
+        decrypted_path_video: Path,
+        decrypted_path_audio: Path,
+        remuxed_path: Path,
+    ):
+        subprocess.run(
+            [
+                self.downloader.mp4box_path_full,
+                "-quiet",
+                "-add",
+                decrypted_path_video,
+                "-add",
+                decrypted_path_audio,
+                "-itags",
+                "artist=placeholder",
+                "-keep-utc",
+                "-new",
+                remuxed_path,
             ],
             check=True,
             **self.downloader.subprocess_additional_args,

@@ -1,5 +1,4 @@
 import datetime
-import functools
 import subprocess
 from pathlib import Path
 
@@ -7,7 +6,7 @@ from pywidevine import PSSH
 from yt_dlp import YoutubeDL
 
 from .downloader import Downloader
-from .enums import DownloadModeSong
+from .enums import DownloadModeSong, RemuxMode
 from .models import Lyrics
 
 
@@ -182,7 +181,37 @@ class DownloaderSong:
         )
         print("\r", end="")
 
-    def fixup(
+    def remux(
+        self,
+        encrypted_path: Path,
+        decrypted_path: Path,
+        remuxed_path: Path,
+        decryption_key: str,
+    ):
+        if self.downloader.remux_mode == RemuxMode.FFMPEG:
+            self.remux_ffmpeg(decryption_key, encrypted_path, remuxed_path)
+        elif self.downloader.remux_mode == RemuxMode.MP4BOX:
+            self.downloader.decrypt_mp4decrypt(encrypted_path, decrypted_path, decryption_key)
+            self.remux_mp4box(decrypted_path, remuxed_path)
+
+    def remux_mp4box(self, decrypted_path: Path, remuxed_path: Path):
+        subprocess.run(
+            [
+                self.downloader.mp4box_path_full,
+                "-quiet",
+                "-add",
+                decrypted_path,
+                "-itags",
+                "artist=placeholder",
+                "-keep-utc",
+                "-new",
+                remuxed_path,
+            ],
+            check=True,
+            **self.downloader.subprocess_additional_args,
+        )
+
+    def remux_ffmpeg(
         self,
         decryption_key: str,
         encrypted_path: Path,

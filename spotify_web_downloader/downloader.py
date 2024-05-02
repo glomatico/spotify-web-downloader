@@ -12,6 +12,7 @@ from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
 from pywidevine import Cdm, Device
 
 from .constants import *
+from .enums import RemuxMode
 from .hardcoded_wvd import HARDCODED_WVD
 from .models import DownloadQueueItem, UrlInfo
 from .spotify_api import SpotifyApi
@@ -27,8 +28,11 @@ class Downloader:
         temp_path: Path = Path("./temp"),
         wvd_path: Path = None,
         ffmpeg_path: str = "ffmpeg",
+        mp4box_path: str = "MP4Box",
+        mp4decrypt_path: str = "mp4decrypt",
         aria2c_path: str = "aria2c",
         nm3u8dlre_path: str = "N_m3u8DL-RE",
+        remux_mode: RemuxMode = RemuxMode.FFMPEG,
         date_tag_template: str = "%Y-%m-%dT%H:%M:%SZ",
         exclude_tags: str = None,
         truncate: int = 40,
@@ -39,8 +43,11 @@ class Downloader:
         self.temp_path = temp_path
         self.wvd_path = wvd_path
         self.ffmpeg_path = ffmpeg_path
+        self.mp4box_path = mp4box_path
+        self.mp4decrypt_path = mp4decrypt_path
         self.aria2c_path = aria2c_path
         self.nm3u8dlre_path = nm3u8dlre_path
+        self.remux_mode = remux_mode
         self.date_tag_template = date_tag_template
         self.exclude_tags = exclude_tags
         self.truncate = truncate
@@ -52,6 +59,8 @@ class Downloader:
 
     def _set_binaries_full_path(self):
         self.ffmpeg_path_full = shutil.which(self.ffmpeg_path)
+        self.mp4box_path_full = shutil.which(self.mp4box_path)
+        self.mp4decrypt_path_full = shutil.which(self.mp4decrypt_path)
         self.aria2c_path_full = shutil.which(self.aria2c_path)
         self.nm3u8dlre_path_full = shutil.which(self.nm3u8dlre_path)
 
@@ -170,12 +179,37 @@ class Downloader:
     ) -> Path:
         return self.temp_path / (f"{track_id}_encrypted" + file_extension)
 
-    def get_fixed_path(
+    def get_decrypted_path(
         self,
         track_id: str,
         file_extension: str,
     ) -> Path:
-        return self.temp_path / (f"{track_id}_fixed" + file_extension)
+        return self.temp_path / (f"{track_id}_decrypted" + file_extension)
+
+    def get_remuxed_path(
+        self,
+        track_id: str,
+        file_extension: str,
+    ) -> Path:
+        return self.temp_path / (f"{track_id}_remuxed" + file_extension)
+
+    def decrypt_mp4decrypt(
+        self,
+        encrypted_path: Path,
+        decrypted_path: Path,
+        decryption_key: str,
+    ):
+        subprocess.run(
+            [
+                self.mp4decrypt_path_full,
+                encrypted_path,
+                "--key",
+                f"1:{decryption_key}",
+                decrypted_path,
+            ],
+            check=True,
+            **self.subprocess_additional_args,
+        )
 
     @staticmethod
     @functools.lru_cache()
