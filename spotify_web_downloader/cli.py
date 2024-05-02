@@ -353,7 +353,7 @@ def main(
             return
         logger.debug("Setting up CDM")
         downloader.set_cdm()
-        if not downloader.ffmpeg_path_full:
+        if not downloader.ffmpeg_path_full and remux_mode == RemuxMode.FFMPEG:
             logger.critical(X_NOT_FOUND_STRING.format("ffmpeg", ffmpeg_path))
             return
         if (
@@ -368,6 +368,15 @@ def main(
         ):
             logger.critical(X_NOT_FOUND_STRING.format("nm3u8dlre", nm3u8dlre_path))
             return
+        if remux_mode == RemuxMode.MP4BOX:
+            if not downloader.mp4box_path_full:
+                logger.critical(X_NOT_FOUND_STRING.format("MP4Box", mp4box_path))
+                return
+            if not downloader.mp4decrypt_path_full:
+                logger.critical(
+                    X_NOT_FOUND_STRING.format("mp4decrypt", mp4decrypt_path)
+                )
+                return
         if not spotify_api.is_premium and premium_quality:
             logger.critical("Cannot download in premium quality with a free account")
             return
