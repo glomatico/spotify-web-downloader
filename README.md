@@ -6,7 +6,7 @@ A Python CLI app for downloading songs/music videos/albums/playlists directly fr
 ## Features
 * Download songs in AAC 128kbps or in AAC 256kbps with a premium account
 * Download music videos with a premium account
-* Download synced lyrics
+* Download synced lyrics with a premium account
 * Highly configurable
 
 ## Prerequisites
@@ -27,7 +27,7 @@ A Python CLI app for downloading songs/music videos/albums/playlists directly fr
 
 ## Usage
 ```bash
-spotify_web_downloader [OPTIONS] URLS...
+spotify-web-downloader [OPTIONS] URLS...
 ```
 
 ### Examples
@@ -58,8 +58,11 @@ spotify-web-downloader can be configured using the command line arguments or the
 | `--temp-path` / `temp_path`                                     | Path to temporary directory.                                                 | `./temp`                                     |
 | `--wvd-path` / `wvd_path`                                       | Path to .wvd file.                                                           | `null`                                       |
 | `--ffmpeg-path` / `ffmpeg_path`                                 | Path to FFmpeg binary.                                                       | `ffmpeg`                                     |
+| `--mp4box-path` / `mp4box_path`                                 | Path to MP4Box binary.                                                       | `MP4Box`                                     |
+| `--mp4decrypt-path` / `mp4decrypt_path`                         | Path to mp4decrypt binary.                                                   | `mp4decrypt`                                 |
 | `--aria2c-path` / `aria2c_path`                                 | Path to aria2c binary.                                                       | `aria2c`                                     |
 | `--nm3u8dlre-path` / `nm3u8dlre_path`                           | Path to N_m3u8DL-RE binary.                                                  | `N_m3u8DL-RE`                                |
+| `--remux-mode` / `remux_mode`                                   | Remux mode.                                                                  | `ffmpeg`                                     |
 | `--date-tag-template` / `date_tag_template`                     | Date tag template.                                                           | `%Y-%m-%dT%H:%M:%SZ`                         |
 | `--exclude-tags` / `exclude_tags`                               | Comma-separated tags to exclude.                                             | `null`                                       |
 | `--truncate` / `truncate`                                       | Maximum length of the file/folder names.                                     | `40`                                         |
@@ -71,8 +74,9 @@ spotify-web-downloader can be configured using the command line arguments or the
 | `--premium-quality`, `-p` / `premium_quality`                   | Download songs in premium quality.                                           | `false`                                      |
 | `--template-folder-music-video` / `template_folder_music_video` | Template of the music video folders as a format string.                      | `{artist}/Unknown Album`                     |
 | `--template-file-music-video` / `template_file_music_video`     | Template of the music video files as a format string.                        | `{title}`                                    |
-| `--download-mode-video` / `download_mode_video`                 | Download mode for videos.                                                    | `ydlp`                                       |
+| `--download-mode-video` / `download_mode_video`                 | Download mode for videos.                                                    | `ytdlp`                                      |
 | `--no-config-file`, `-n` / -                                    | Do not use a config file.                                                    | `false`                                      |
+
 
 ### Tag variables
 The following variables can be used in the template folder/file and/or in the `exclude_tags` list:
@@ -97,6 +101,13 @@ The following variables can be used in the template folder/file and/or in the `e
 - `track`
 - `track_total`
 - `url`
+  
+### Remux modes
+The following remux modes are available:
+* `ffmpeg`
+* `mp4box`
+    * Requires mp4decrypt
+    * Can be obtained from here: https://gpac.wp.imt.fr/downloads
 
 ### Music videos quality
 Music videos will be downloaded in the highest quality available in H.264/AAC, up to 1080p.
