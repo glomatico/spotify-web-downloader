@@ -17,6 +17,9 @@ A Python CLI app for downloading songs/music videos/albums/playlists directly fr
         * Chromium based browsers: https://chrome.google.com/webstore/detail/gdocmgbfkjnnpapoeobnolbbkoibbcif
 * FFmpeg on your system PATH
     * Older versions of FFmpeg may not work.
+    * Up to date binaries can be obtained from the links below:
+        * Windows: https://github.com/AnimMouse/ffmpeg-stable-autobuild/releases
+        * Linux: https://johnvansickle.com/ffmpeg/
 
 ## Installation
 1. Install the package `spotify-web-downloader` using pip
