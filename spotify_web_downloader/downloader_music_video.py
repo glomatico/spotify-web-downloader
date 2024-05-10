@@ -111,15 +111,19 @@ class DownloaderMusicVideo:
         )
 
     def get_decryption_key(self, pssh: str) -> str:
-        pssh = PSSH(pssh)
-        cdm_session = self.downloader.cdm.open()
-        challenge = self.downloader.cdm.get_license_challenge(cdm_session, pssh)
-        license = self.downloader.spotify_api.get_widevine_license_video(challenge)
-        self.downloader.cdm.parse_license(cdm_session, license)
-        decryption_key = next(
-            i for i in self.downloader.cdm.get_keys(cdm_session) if i.type == "CONTENT"
-        ).key.hex()
-        self.downloader.cdm.close(cdm_session)
+        try:
+            pssh = PSSH(pssh)
+            cdm_session = self.downloader.cdm.open()
+            challenge = self.downloader.cdm.get_license_challenge(cdm_session, pssh)
+            license = self.downloader.spotify_api.get_widevine_license_video(challenge)
+            self.downloader.cdm.parse_license(cdm_session, license)
+            decryption_key = next(
+                i
+                for i in self.downloader.cdm.get_keys(cdm_session)
+                if i.type == "CONTENT"
+            ).key.hex()
+        finally:
+            self.downloader.cdm.close(cdm_session)
         return decryption_key
 
     def get_m3u8_path(self, track_id: str, type: str) -> Path:

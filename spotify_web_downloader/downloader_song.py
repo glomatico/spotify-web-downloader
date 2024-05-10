@@ -62,15 +62,19 @@ class DownloaderSong:
         )
 
     def get_decryption_key(self, pssh: str) -> str:
-        pssh = PSSH(pssh)
-        cdm_session = self.downloader.cdm.open()
-        challenge = self.downloader.cdm.get_license_challenge(cdm_session, pssh)
-        license = self.downloader.spotify_api.get_widevine_license_music(challenge)
-        self.downloader.cdm.parse_license(cdm_session, license)
-        decryption_key = next(
-            i for i in self.downloader.cdm.get_keys(cdm_session) if i.type == "CONTENT"
-        ).key.hex()
-        self.downloader.cdm.close(cdm_session)
+        try:
+            pssh = PSSH(pssh)
+            cdm_session = self.downloader.cdm.open()
+            challenge = self.downloader.cdm.get_license_challenge(cdm_session, pssh)
+            license = self.downloader.spotify_api.get_widevine_license_music(challenge)
+            self.downloader.cdm.parse_license(cdm_session, license)
+            decryption_key = next(
+                i
+                for i in self.downloader.cdm.get_keys(cdm_session)
+                if i.type == "CONTENT"
+            ).key.hex()
+        finally:
+            self.downloader.cdm.close(cdm_session)
         return decryption_key
 
     def get_file_id(self, metadata_gid: dict) -> str:
@@ -191,7 +195,9 @@ class DownloaderSong:
         if self.downloader.remux_mode == RemuxMode.FFMPEG:
             self.remux_ffmpeg(decryption_key, encrypted_path, remuxed_path)
         elif self.downloader.remux_mode == RemuxMode.MP4BOX:
-            self.downloader.decrypt_mp4decrypt(encrypted_path, decrypted_path, decryption_key)
+            self.downloader.decrypt_mp4decrypt(
+                encrypted_path, decrypted_path, decryption_key
+            )
             self.remux_mp4box(decrypted_path, remuxed_path)
 
     def remux_mp4box(self, decrypted_path: Path, remuxed_path: Path):
