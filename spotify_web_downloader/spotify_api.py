@@ -28,9 +28,7 @@ class SpotifyApi:
     )
     METADATA_API_URL = "https://api.spotify.com/v1/{type}/{track_id}"
     PATHFINDER_API_URL = "https://api-partner.spotify.com/pathfinder/v1/query"
-    TRACK_CREDITS_API_URL = (
-        "https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{track_id}/credits"
-    )
+    TRACK_CREDITS_API_URL = "https://spclient.wg.spotify.com/track-credits-view/v0/experimental/{track_id}/credits"
     EXTEND_TRACK_COLLECTION_WAIT_TIME = 0.5
 
     def __init__(
@@ -70,7 +68,9 @@ class SpotifyApi:
 
     @staticmethod
     def _check_response(response: requests.Response):
-        if not response.ok:
+        try:
+            response.raise_for_status()
+        except requests.HTTPError:
             raise Exception(
                 f"Request failed with status code {response.status_code}: {response.text}"
             )
