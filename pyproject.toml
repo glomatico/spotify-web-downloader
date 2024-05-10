@@ -1,6 +1,6 @@
 [project]
 name = "spotify-web-downloader"
-description = "A Python CLI app to download songs/music videos/albums/playlists directly from Spotify."
+description = "A Python CLI app for downloading songs/music videos/albums/playlists directly from Spotify."
 requires-python = ">=3.8"
 authors = [{ name = "glomatico" }]
 dependencies = ["click", "pybase62", "pywidevine", "pyyaml", "yt-dlp"]
