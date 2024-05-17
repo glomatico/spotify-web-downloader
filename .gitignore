@@ -5,3 +5,15 @@ __pycache__
 !pyproject.toml
 !README.md
 !requirements.txt
+
+# Docker support:
+!docker-compose.yml
+
+docker/*
+!docker/
+!docker/Dockerfile
+!docker/example.gif
+
+docker/downloads/*
+!docker/downloads/
+!docker/downloads/.placeholder.txt

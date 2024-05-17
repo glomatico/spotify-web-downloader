@@ -1,0 +1,17 @@
+# Docker Compose file for running the Spotify Web Downloader
+#
+# Requirements:
+# - Put `cookies.txt` and `urls.txt` in the `./docker` folder
+# - Run `docker compose up`
+# - Files will be downloaded to `./docker/downloads`
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    volumes:
+      - ./docker/downloads:/app/Spotify
+    user: "1000:1000"
+    command: ["spotify-web-downloader", "-r", "urls.txt"]
+  

@@ -127,3 +127,27 @@ The following modes are available for videos:
 * `nm3u8dlre`
     * Faster than `ytdlp`
     * Can be obtained from here: https://github.com/nilaoda/N_m3u8DL-RE/releases
+
+### Docker support
+
+`spotify-web-downloader` can also be built and automatically ran in a Docker container.
+
+Requirements:
+
+- Copy your `cookies.txt` file to: `./docker/cookies.txt`
+
+- Copy the list of Spotify URLs that you want to download to: `./docker/urls.txt`
+
+- In a terminal, run:
+
+```sh
+cd spotify-web-downloader
+
+docker compose up
+```
+
+Your files will be downloaded to: `./docker/downloads`
+
+Demo:
+
+![Demo Gif](./docker/example.gif)

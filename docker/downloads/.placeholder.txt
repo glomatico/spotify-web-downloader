@@ -1,0 +1,1 @@
+# This file is here to preserve the empty `downloads` folder when committing to git
