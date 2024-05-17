@@ -12,6 +12,8 @@ services:
       dockerfile: ./docker/Dockerfile
     volumes:
       - ./docker/downloads:/app/Spotify
+      - ./docker/cookies.txt:/app/cookies.txt
+      - ./docker/urls.txt:/app/urls.txt
     user: "1000:1000"
     command: ["spotify-web-downloader", "-r", "urls.txt"]
   

@@ -18,10 +18,6 @@ COPY ./spotify_web_downloader ./spotify_web_downloader
 COPY ./pyproject.toml .
 COPY ./requirements.txt .
 
-# Copy user files
-COPY ./docker/cookies.txt .
-COPY ./docker/urls.txt .
-
 # Add the local user's bin directory to the PATH
 ENV PATH="/home/user/.local/bin:${PATH}"
 
