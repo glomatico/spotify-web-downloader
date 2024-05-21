@@ -204,6 +204,12 @@ def load_config_file(
     default=downloader_sig.parameters["truncate"].default,
     help="Maximum length of the file/folder names.",
 )
+@click.option(
+    "--replace-join-chars",
+    is_flag=True,
+    default=downloader_sig.parameters["replace_join_chars"].default,
+    help="Replace artist join characters ',' and '&' with '/'.",
+)
 # DownloaderSong specific options
 @click.option(
     "--template-folder-album",
@@ -241,6 +247,12 @@ def load_config_file(
     is_flag=True,
     default=downloader_song_sig.parameters["premium_quality"].default,
     help="Download songs in premium quality.",
+)
+@click.option(
+    "--single-album-artist",
+    is_flag=True,
+    default=downloader_song_sig.parameters["single_album_artist"].default,
+    help="Use only the first album artist.",
 )
 # DownloaderMusicVideo specific options
 @click.option(
@@ -293,12 +305,14 @@ def main(
     date_tag_template: str,
     exclude_tags: str,
     truncate: int,
+    replace_join_chars: bool,
     template_folder_album: str,
     template_folder_compilation: str,
     template_file_single_disc: str,
     template_file_multi_disc: str,
     download_mode_song: DownloadModeSong,
     premium_quality: bool,
+    single_album_artist: bool,
     template_folder_music_video: str,
     template_file_music_video: str,
     download_mode_video: DownloadModeVideo,
@@ -329,6 +343,7 @@ def main(
         date_tag_template,
         exclude_tags,
         truncate,
+        replace_join_chars,
     )
     downloader_song = DownloaderSong(
         downloader,
@@ -338,6 +353,7 @@ def main(
         template_file_multi_disc,
         download_mode_song,
         premium_quality,
+        single_album_artist,
     )
     downloader_music_video = DownloaderMusicVideo(
         downloader,

@@ -20,6 +20,7 @@ class DownloaderSong:
         template_file_multi_disc: str = "{disc}-{track:02d} {title}",
         download_mode: DownloadModeSong = DownloadModeSong.YTDLP,
         premium_quality: bool = False,
+        single_album_artist: bool = False,
     ):
         self.downloader = downloader
         self.template_folder_album = template_folder_album
@@ -28,6 +29,7 @@ class DownloaderSong:
         self.template_file_multi_disc = template_file_multi_disc
         self.download_mode = download_mode
         self.premium_quality = premium_quality
+        self.single_album_artist = single_album_artist
         self._set_codec()
 
     def _set_codec(self):
@@ -113,7 +115,7 @@ class DownloaderSong:
         )["artists"]
         tags = {
             "album": album_metadata["name"],
-            "album_artist": self.downloader.get_artist(album_metadata["artists"]),
+            "album_artist": album_metadata["artists"][0]["name"] if self.single_album_artist else self.downloader.get_artist(album_metadata["artists"]),
             "artist": self.downloader.get_artist(metadata_gid["artist"]),
             "compilation": (
                 True if album_metadata["album_type"] == "compilation" else False

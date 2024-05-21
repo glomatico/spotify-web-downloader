@@ -36,6 +36,7 @@ class Downloader:
         date_tag_template: str = "%Y-%m-%dT%H:%M:%SZ",
         exclude_tags: str = None,
         truncate: int = 40,
+        replace_join_chars: bool = False,
         silence: bool = False,
     ):
         self.spotify_api = spotify_api
@@ -51,6 +52,7 @@ class Downloader:
         self.date_tag_template = date_tag_template
         self.exclude_tags = exclude_tags
         self.truncate = truncate
+        self.replace_join_chars = replace_join_chars
         self.silence = silence
         self._set_binaries_full_path()
         self._set_exclude_tags_list()
@@ -160,10 +162,10 @@ class Downloader:
     def get_artist(self, artist_list: list[dict]) -> str:
         if len(artist_list) == 1:
             return artist_list[0]["name"]
-        return (
-            ", ".join(i["name"] for i in artist_list[:-1])
-            + f' & {artist_list[-1]["name"]}'
-        )
+        if self.replace_join_chars:
+            return ' / '.join(i["name"] for i in artist_list)
+        else:
+            return ', '.join(i["name"] for i in artist_list[:-1]) + f' & {artist_list[-1]["name"]}'
 
     def get_cover_url(self, metadata_gid: dict, size: str) -> str:
         return "https://i.scdn.co/image/" + next(
