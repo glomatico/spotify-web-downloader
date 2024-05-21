@@ -163,7 +163,7 @@ class Downloader:
         if len(artist_list) == 1:
             return artist_list[0]["name"]
         if self.replace_join_chars:
-            return ' / '.join(i["name"] for i in artist_list)
+            return '/'.join(i["name"] for i in artist_list)
         else:
             return ', '.join(i["name"] for i in artist_list[:-1]) + f' & {artist_list[-1]["name"]}'
 
