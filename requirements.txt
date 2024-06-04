@@ -1,5 +1,6 @@
 click
 pybase62
+python-dotenv
 pywidevine
 pyyaml
 yt-dlp

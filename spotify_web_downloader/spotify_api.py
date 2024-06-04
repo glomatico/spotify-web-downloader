@@ -4,8 +4,6 @@ import functools
 import json
 import re
 import time
-from http.cookiejar import MozillaCookieJar
-from pathlib import Path
 
 import base62
 import requests
@@ -33,17 +31,14 @@ class SpotifyApi:
 
     def __init__(
         self,
-        cookies_path: Path = Path("./cookies.txt"),
+        sp_dc_cookie: str,
     ):
-        self.cookies_path = cookies_path
+        self.sp_dc = sp_dc_cookie
         self._setup_session()
 
     def _setup_session(self):
         self.session = requests.Session()
-        if self.cookies_path:
-            cookies = MozillaCookieJar(self.cookies_path)
-            cookies.load(ignore_discard=True, ignore_expires=True)
-            self.session.cookies.update(cookies)
+        self.session.cookies.set("sp_dc", self.sp_dc)
         self.session.headers.update(
             {
                 "sec-ch-ua": '"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',

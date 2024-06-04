@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import dotenv
 import inspect
 import json
 import logging
@@ -124,11 +126,10 @@ def load_config_file(
 )
 # API specific options
 @click.option(
-    "--cookies-path",
+    "--sp-dc-cookie",
     "-c",
-    type=Path,
-    default=spotify_api_sig.parameters["cookies_path"].default,
-    help="Path to .txt cookies file.",
+    type=str,
+    help="sp_dc cookie.",
 )
 # Downloader specific options
 @click.option(
@@ -280,7 +281,7 @@ def main(
     config_path: Path,
     log_level: str,
     print_exceptions: bool,
-    cookies_path: Path,
+    sp_dc_cookie: str,
     output_path: Path,
     temp_path: Path,
     wvd_path: Path,
@@ -304,6 +305,7 @@ def main(
     download_mode_video: DownloadModeVideo,
     no_config_file: bool,
 ) -> None:
+    dotenv.load_dotenv()
     logging.basicConfig(
         format="[%(levelname)-8s %(asctime)s] %(message)s",
         datefmt="%H:%M:%S",
@@ -311,10 +313,12 @@ def main(
     logger = logging.getLogger(__name__)
     logger.setLevel(log_level)
     logger.debug("Starting downloader")
-    if not cookies_path.exists():
-        logger.critical(X_NOT_FOUND_STRING.format("Cookies file", cookies_path))
+    if not sp_dc_cookie:
+        sp_dc_cookie = os.getenv("SP_DC_COOKIE")
+    if not sp_dc_cookie:
+        logger.critical("Environment variable or commandline argument for sp_dc_cookie not found")
         return
-    spotify_api = SpotifyApi(cookies_path)
+    spotify_api = SpotifyApi(sp_dc_cookie)
     downloader = Downloader(
         spotify_api,
         output_path,
