@@ -11,10 +11,8 @@ A Python CLI app for downloading songs/music videos/albums/playlists directly fr
 
 ## Prerequisites
 * Python 3.8 or higher
-* The cookies file of your Spotify account (free or premium)
-    * You can get your cookies by using one of the following extensions on your browser of choice at the Spotify website with your account signed in:
-        * Firefox: https://addons.mozilla.org/addon/export-cookies-txt
-        * Chromium based browsers: https://chrome.google.com/webstore/detail/gdocmgbfkjnnpapoeobnolbbkoibbcif
+* The "sp_dc" token (cookie) of your spotify account (free or premium)
+    * Login to your spotify account in a web browser. Open the developer tools and look for the "sp_dc" token in your cookies. Set this as an environment variable, place it in a .env file or set it via the `--sp-dc-cookie` (short `-c`) commandline option
 * FFmpeg on your system PATH
     * Older versions of FFmpeg may not work.
     * Up to date binaries can be obtained from the links below:
