@@ -62,9 +62,9 @@ class DownloaderSong:
         )
 
     def get_decryption_key(self, pssh: str) -> str:
+        cdm_session = self.downloader.cdm.open()
         try:
             pssh = PSSH(pssh)
-            cdm_session = self.downloader.cdm.open()
             challenge = self.downloader.cdm.get_license_challenge(cdm_session, pssh)
             license = self.downloader.spotify_api.get_widevine_license_music(challenge)
             self.downloader.cdm.parse_license(cdm_session, license)
