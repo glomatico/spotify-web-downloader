@@ -27,11 +27,14 @@ class Downloader:
         output_path: Path = Path("./Spotify"),
         temp_path: Path = Path("./temp"),
         wvd_path: Path = None,
+
+        # TODO: Maybe use ExternalUtilities dataclass for all these utilities paths.
         ffmpeg_path: str = "ffmpeg",
         mp4box_path: str = "MP4Box",
         mp4decrypt_path: str = "mp4decrypt",
         aria2c_path: str = "aria2c",
         nm3u8dlre_path: str = "N_m3u8DL-RE",
+
         remux_mode: RemuxMode = RemuxMode.FFMPEG,
         date_tag_template: str = "%Y-%m-%dT%H:%M:%SZ",
         exclude_tags: str = None,
