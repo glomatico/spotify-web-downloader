@@ -34,7 +34,7 @@ class DownloaderMusicVideo:
         self,
         track_id: str,
         artist_id: str,
-    ) -> dict | None:
+    ) -> str | None:
         now_playing_view = self.downloader.spotify_api.get_now_playing_view(
             track_id, artist_id
         )
