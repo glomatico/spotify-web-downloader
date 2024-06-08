@@ -140,8 +140,7 @@ class Downloader:
                 dirty_string = dirty_string[: self.truncate - 4]
         return dirty_string.strip()
 
-    def get_release_date_datetime_obj(self, metadata_gid: dict) -> datetime.datetime:
-        metadata_gid_release_date = metadata_gid["album"]["date"]
+    def get_datetime_from_metadata_date(self, metadata_gid_release_date: dict) -> datetime.datetime:
         if metadata_gid_release_date.get("day"):
             datetime_obj = datetime.datetime(
                 year=metadata_gid_release_date["year"],
@@ -161,6 +160,10 @@ class Downloader:
                 day=1,
             )
         return datetime_obj
+
+    def get_release_date_datetime_obj(self, metadata_gid: dict) -> datetime.datetime:
+        metadata_gid_release_date = metadata_gid["album"]["date"]
+        return self.get_datetime_from_metadata_date(metadata_gid_release_date)
 
     def get_release_date_tag(self, datetime_obj: datetime.datetime) -> str:
         return datetime_obj.strftime(self.date_tag_template)
