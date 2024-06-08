@@ -12,6 +12,7 @@ from . import __version__
 from .app import App, ExternalUtilities
 from .constants import *
 from .downloader import Downloader
+from .downloader_episode import DownloaderEpisode
 from .downloader_music_video import DownloaderMusicVideo
 from .downloader_song import DownloaderSong
 from .enums import DownloadModeSong, DownloadModeVideo, RemuxMode
@@ -347,6 +348,15 @@ def main(
         download_mode_video,
     )
 
+    # TODO: Add an option to pass non-default episode file templates.
+    downloader_episode = DownloaderEpisode(
+        downloader=downloader,
+        # template_folder_show=template_folder_show,
+        # template_file=template_file,
+        # download_mode=download_mode,
+        premium_quality=premium_quality,
+    )
+
     utilities = ExternalUtilities(
         ffmpeg_path=ffmpeg_path,
         aria2c_path=aria2c_path,
@@ -361,6 +371,7 @@ def main(
         downloader,
         downloader_song,
         downloader_music_video,
+        downloader_episode,
         lrc_only,
         download_music_video,
         utilities,

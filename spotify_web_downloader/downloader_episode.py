@@ -11,40 +11,31 @@ from .enums import DownloadModeSong, RemuxMode
 from .models import Lyrics
 
 
-class DownloaderSong:
+# TODO: Remove unused code.
+# TODO: Move common with DownloaderSong parts to a separate class.
+class DownloaderEpisode:
     def __init__(
         self,
         downloader: Downloader,
-        template_folder_album: str = "{album_artist}/{album}",
-        template_folder_compilation: str = "Compilations/{album}",
-        template_file_single_disc: str = "{track:02d} {title}",
-        template_file_multi_disc: str = "{disc}-{track:02d} {title}",
+        template_folder_show: str = "{publisher}/{show}",
+        template_file: str = "s{season:02d}e{episode:02d} {title}",
         download_mode: DownloadModeSong = DownloadModeSong.YTDLP,
         premium_quality: bool = False,
     ):
         self.downloader = downloader
-        self.template_folder_album = template_folder_album
-        self.template_folder_compilation = template_folder_compilation
-        self.template_file_single_disc = template_file_single_disc
-        self.template_file_multi_disc = template_file_multi_disc
+        self.template_folder_show = template_folder_show
+        self.template_file = template_file
         self.download_mode = download_mode
         self.premium_quality = premium_quality
         self._set_codec()
 
     def _set_codec(self):
-        self.codec = "MP4_256" if self.premium_quality else "MP4_128"
+        # self.codec = "MP4_256" if self.premium_quality else "MP4_128"
+        self.codec = "MP4_128_DUAL" if self.premium_quality else "MP4_128"
 
     def get_final_path(self, tags: dict) -> Path:
-        final_path_folder = (
-            self.template_folder_compilation.split("/")
-            if tags["compilation"]
-            else self.template_folder_album.split("/")
-        )
-        final_path_file = (
-            self.template_file_multi_disc.split("/")
-            if tags["disc_total"] > 1
-            else self.template_file_single_disc.split("/")
-        )
+        final_path_folder = self.template_folder_show.split("/")
+        final_path_file = self.template_file.split("/")
         final_path_folder = [
             self.downloader.get_sanitized_string(i.format(**tags), True)
             for i in final_path_folder
@@ -56,7 +47,7 @@ class DownloaderSong:
             self.downloader.get_sanitized_string(
                 final_path_file[-1].format(**tags), False
             )
-            + ".m4a"
+            + ".m4a"  # TODO: Research posible extensions of episode files.
         ]
         return self.downloader.output_path.joinpath(*final_path_folder).joinpath(
             *final_path_file
@@ -79,71 +70,43 @@ class DownloaderSong:
         return decryption_key
 
     def get_file_id(self, metadata_gid: dict) -> Optional[str]:
-        audio_files = metadata_gid.get("file")
+        # file_id = [
+        #     file_dict['file_id'] for file_dict in metadata_gid['audio'] if
+        #     file_dict['format'] == 'MP4_128_DUAL'
+        # ][0]
+
+        audio_files = metadata_gid.get("audio")
         if audio_files is None:
-            if metadata_gid.get("alternative") is not None:
-                audio_files = metadata_gid["alternative"][0]["file"]
-            else:
-                return None
+            return None
+            # if metadata_gid.get("alternative") is not None:
+            #     audio_files = metadata_gid["alternative"][0]["file"]
+            # else:
+            #     return None
         return next(i["file_id"] for i in audio_files if i["format"] == self.codec)
 
     def get_tags(
         self,
         metadata_gid: dict,
-        album_metadata: dict,
-        track_credits: dict,
-        lyrics_unsynced: str,
+        show_metadata: dict,
     ) -> dict:
-        isrc = None
-        if metadata_gid.get("external_id"):
-            isrc = next(
-                (i for i in metadata_gid["external_id"] if i["type"] == "isrc"), None
-            )
-        release_date_datetime_obj = self.downloader.get_release_date_datetime_obj(
-            metadata_gid
-        )
-        producers = next(
-            role
-            for role in track_credits["roleCredits"]
-            if role["roleTitle"] == "Producers"
-        )["artists"]
-        composers = next(
-            role
-            for role in track_credits["roleCredits"]
-            if role["roleTitle"] == "Writers"
-        )["artists"]
+        release_date_datetime_obj = self.downloader.get_datetime_from_metadata_date(metadata_gid["publish_time"])
+        # TODO: Add available episode tags to README.
         tags = {
-            "album": album_metadata["name"],
-            "album_artist": self.downloader.get_artist(album_metadata["artists"]),
-            "artist": self.downloader.get_artist(metadata_gid["artist"]),
-            "compilation": (
-                True if album_metadata["album_type"] == "compilation" else False
-            ),
-            "composer": self.downloader.get_artist(composers) if composers else None,
+            "title": metadata_gid["name"],
+            "show": show_metadata["name"],
+            "publisher": show_metadata["publisher"],
+            "episode": metadata_gid["episode_number"],
+            "season": metadata_gid["season_number"],
+            "total_episodes": show_metadata["total_episodes"],
             "copyright": next(
-                (i["text"] for i in album_metadata["copyrights"] if i["type"] == "P"),
+                (i["text"] for i in show_metadata["copyrights"] if i["type"] == "P"),
                 None,
             ),
-            "disc": metadata_gid["disc_number"],
-            "disc_total": album_metadata["tracks"]["items"][-1]["disc_number"],
-            "isrc": isrc.get("id") if isrc is not None else None,
-            "label": album_metadata.get("label"),
-            "lyrics": lyrics_unsynced,
-            "media_type": 1,
-            "producer": self.downloader.get_artist(producers) if producers else None,
-            "rating": 1 if metadata_gid.get("explicit") else 0,
             "release_date": self.downloader.get_release_date_tag(
                 release_date_datetime_obj
             ),
             "release_year": str(release_date_datetime_obj.year),
-            "title": metadata_gid["name"],
-            "track": metadata_gid["number"],
-            "track_total": max(
-                i["track_number"]
-                for i in album_metadata["tracks"]["items"]
-                if i["disc_number"] == metadata_gid["disc_number"]
-            ),
-            "url": f"https://open.spotify.com/track/{self.downloader.spotify_api.gid_to_track_id(metadata_gid['gid'])}",
+            "url": f"https://open.spotify.com/episode/{self.downloader.spotify_api.gid_to_track_id(metadata_gid['gid'])}",
         }
         return tags
 
@@ -267,6 +230,13 @@ class DownloaderSong:
     def get_cover_path(self, final_path: Path) -> Path:
         return final_path.parent / "Cover.jpg"
 
+    def get_cover_url(self, metadata_gid: dict, size: str) -> str:
+        return "https://i.scdn.co/image/" + next(
+            i["file_id"]
+            for i in metadata_gid["cover_image"]["image"]
+            if i["size"] == size
+        )
+
     def get_lrc_path(self, final_path: Path) -> Path:
         return final_path.with_suffix(".lrc")
 
@@ -274,3 +244,4 @@ class DownloaderSong:
         if lyrics_synced:
             lrc_path.parent.mkdir(parents=True, exist_ok=True)
             lrc_path.write_text(lyrics_synced, encoding="utf8")
+

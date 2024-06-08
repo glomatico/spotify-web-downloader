@@ -141,6 +141,32 @@ class SpotifyApi:
         self._check_response(response)
         return response.json()
 
+    @functools.lru_cache()
+    def get_show(
+        self,
+        show_id: str,
+        extend: bool = True,
+    ) -> dict:
+        response = self.session.get(
+            self.METADATA_API_URL.format(type="shows", track_id=show_id)
+        )
+        self._check_response(response)
+        show = response.json()
+        if extend:
+            show = self.extend_episode_collection(show)
+        return show
+
+    def extend_episode_collection(self, episode_collection: dict) -> dict:
+        next_url = episode_collection["episodes"]["next"]
+        while next_url is not None:
+            response = self.session.get(next_url)
+            self._check_response(response)
+            next_episodes = response.json()
+            episode_collection["episodes"]["items"].extend(next_episodes["items"])
+            next_url = next_episodes["next"]
+            time.sleep(self.EXTEND_TRACK_COLLECTION_WAIT_TIME)
+        return episode_collection
+
     def extend_track_collection(self, track_collection: dict) -> dict:
         next_url = track_collection["tracks"]["next"]
         while next_url is not None:
