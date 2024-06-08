@@ -248,7 +248,7 @@ class DownloaderMusicVideo:
         tags["release_year"] = str(release_date_datetime_obj.year)
         return tags
 
-    def download(self, m3u8_path: Path, encrypted_path: str):
+    def download(self, m3u8_path: Path, encrypted_path: Path):
         if self.download_mode == DownloadModeVideo.YTDLP:
             self.download_ytdlp(m3u8_path, encrypted_path)
         elif self.download_mode == DownloadModeVideo.NM3U8DLRE:
