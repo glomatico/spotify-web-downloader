@@ -114,10 +114,14 @@ class App:
             for queue_index, queue_item in enumerate(download_queue, start=1):
                 queue_progress = f"Item {queue_index}/{len(download_queue)} from URL {url_index}/{len(urls)}"
                 item_name = queue_item.metadata["name"]
+                item_type = queue_item.metadata["type"]
                 self.logger.info(f'({queue_progress}) Downloading "{item_name}"')
 
                 with DownloadManager(self.logger, self.downloader, print_exceptions, item_name, on_error=error_tracker.add):
-                    self.process_track(queue_progress, queue_item, overwrite, no_lrc, save_cover)
+                    if item_type == 'track':
+                        self.process_track(queue_progress, queue_item, overwrite, no_lrc, save_cover)
+                    else:
+                        raise ValueError(f"Unsupported item type to download: {item_type}")
 
         self.logger.info(f"Done ({error_tracker.error_count} error(s))")
 
@@ -131,9 +135,11 @@ class App:
     ):
         track = queue_item.metadata
         track_id = track["id"]
+        item_type = track['type']
+        assert item_type == 'track', "Expected item_type to be 'track' for an queue_item in process_track()"
         self.logger.debug("Getting GID metadata")
         gid = self.spotify_api.track_id_to_gid(track_id)
-        metadata_gid = self.spotify_api.get_gid_metadata(gid)
+        metadata_gid = self.spotify_api.get_gid_metadata(type_=item_type, gid=gid)
         if self.download_music_video:
             music_video_id = (
                 self.downloader_music_video.get_music_video_id_from_song_id(
@@ -146,7 +152,8 @@ class App:
                 )
                 return
             metadata_gid = self.spotify_api.get_gid_metadata(
-                self.spotify_api.track_id_to_gid(music_video_id)
+                type_=item_type,
+                gid=self.spotify_api.track_id_to_gid(music_video_id)
             )
             self.logger.warning(
                 f"({queue_progress}) Switching to download music video "

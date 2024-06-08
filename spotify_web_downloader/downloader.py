@@ -94,7 +94,7 @@ class Downloader:
             self.cdm = Cdm.from_device(Device.loads(HARDCODED_WVD))
 
     def get_url_info(self, url: str) -> UrlInfo:
-        url_regex_result = re.search(r"(album|playlist|track)/(\w{22})", url)
+        url_regex_result = re.search(r"(album|playlist|track|episode)/(\w{22})", url)
         if url_regex_result is None:
             raise Exception("Invalid URL")
         return UrlInfo(type=url_regex_result.group(1), id=url_regex_result.group(2))
@@ -122,6 +122,10 @@ class Downloader:
         elif url_info.type == "track":
             download_queue.append(
                 DownloadQueueItem(metadata=self.spotify_api.get_track(url_info.id))
+            )
+        elif url_info.type == "episode":
+            download_queue.append(
+                DownloadQueueItem(metadata=self.spotify_api.get_episode(url_info.id))
             )
         return download_queue
 

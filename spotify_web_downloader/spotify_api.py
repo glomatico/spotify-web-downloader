@@ -6,6 +6,7 @@ import re
 import time
 from http.cookiejar import MozillaCookieJar
 from pathlib import Path
+from typing import Literal
 
 import base62
 import requests
@@ -14,7 +15,7 @@ import requests
 class SpotifyApi:
     SPOTIFY_HOME_PAGE_URL = "https://open.spotify.com/"
     GID_METADATA_API_URL = (
-        "https://spclient.wg.spotify.com/metadata/4/track/{gid}?market=from_token"
+        "https://spclient.wg.spotify.com/metadata/4/{type}/{gid}?market=from_token"
     )
     VIDEO_MANIFEST_API_URL = "https://gue1-spclient.spotify.com/manifests/v7/json/sources/{gid}/options/supports_drm"
     WIDEVINE_LICENSE_API_URL = (
@@ -83,8 +84,8 @@ class SpotifyApi:
     def gid_to_track_id(gid: str) -> str:
         return base62.encode(int(gid, 16), charset=base62.CHARSET_INVERTED).zfill(22)
 
-    def get_gid_metadata(self, gid: str) -> dict:
-        response = self.session.get(self.GID_METADATA_API_URL.format(gid=gid))
+    def get_gid_metadata(self, type_: Literal['track', 'episode'], gid: str) -> dict:
+        response = self.session.get(self.GID_METADATA_API_URL.format(type=type_, gid=gid))
         self._check_response(response)
         return response.json()
 
@@ -129,6 +130,13 @@ class SpotifyApi:
     def get_track(self, track_id: str) -> dict:
         response = self.session.get(
             self.METADATA_API_URL.format(type="tracks", track_id=track_id)
+        )
+        self._check_response(response)
+        return response.json()
+
+    def get_episode(self, track_id: str) -> dict:
+        response = self.session.get(
+            self.METADATA_API_URL.format(type="episodes", track_id=track_id)
         )
         self._check_response(response)
         return response.json()
