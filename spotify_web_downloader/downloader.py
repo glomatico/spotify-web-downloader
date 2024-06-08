@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Optional, Callable, Any
 
 import requests
 from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
@@ -277,3 +278,37 @@ class Downloader:
 
     def cleanup_temp_path(self):
         shutil.rmtree(self.temp_path)
+
+
+class DownloadManager:
+    def __init__(
+            self,
+            logger,
+            downloader,
+            print_exceptions,
+            item_name,
+            on_error: Optional[Callable[[BaseException], Any]] = None
+    ):
+        self.logger = logger
+        self.downloader = downloader
+        self.print_exceptions = print_exceptions
+        self.item_name = item_name
+        self.on_error = on_error
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_value is not None:
+            error_msg = f'Failed to download "{self.item_name}"'
+            if self.on_error:
+                self.on_error(exc_value)
+            self.logger.error(
+                error_msg,
+                exc_info=self.print_exceptions,
+            )
+        if self.downloader.temp_path.exists():
+            self.logger.debug(f'Cleaning up "{self.downloader.temp_path}"')
+            self.downloader.cleanup_temp_path()
+        # Return False to propagate the exception, if any.
+        return False

@@ -3,11 +3,11 @@ import logging
 from pathlib import Path
 
 from .constants import X_NOT_FOUND_STRING
-from .downloader import Downloader
+from .downloader import Downloader, DownloadManager
 from .downloader_music_video import DownloaderMusicVideo
 from .downloader_song import DownloaderSong
 from .enums import RemuxMode, DownloadModeSong, DownloadModeVideo
-from .models import Lyrics
+from .models import Lyrics, DownloadQueueItem
 from .spotify_api import SpotifyApi
 
 
@@ -19,6 +19,12 @@ class ExternalUtilities:
     mp4box_path: str
     mp4decrypt_path: str
 
+@dataclasses.dataclass
+class ExceptionTracker:
+    error_count: int = 0
+
+    def add(self, exc_value: BaseException = None):
+        self.error_count += 1
 
 class App:
     def __init__(self,
@@ -90,7 +96,7 @@ class App:
             no_lrc: bool,
             print_exceptions: bool,
             ):
-        error_count = 0
+        error_tracker = ExceptionTracker()
         if read_urls_as_txt:
             urls = [url.strip() for url in Path(urls[0]).read_text().splitlines()]
         for url_index, url in enumerate(urls, start=1):
@@ -99,226 +105,229 @@ class App:
                 url_info = self.downloader.get_url_info(url)
                 download_queue = self.downloader.get_download_queue(url_info)
             except Exception as e:
-                error_count += 1
+                error_tracker.add(e)
                 self.logger.error(
                     f'({url_progress}) Failed to check "{url}"',
                     exc_info=print_exceptions,
                 )
                 continue
             for queue_index, queue_item in enumerate(download_queue, start=1):
-                queue_progress = f"Track {queue_index}/{len(download_queue)} from URL {url_index}/{len(urls)}"
-                track = queue_item.metadata
-                try:
-                    self.logger.info(f'({queue_progress}) Downloading "{track["name"]}"')
-                    track_id = track["id"]
-                    self.logger.debug("Getting GID metadata")
-                    gid = self.spotify_api.track_id_to_gid(track_id)
-                    metadata_gid = self.spotify_api.get_gid_metadata(gid)
-                    if self.download_music_video:
-                        music_video_id = (
-                            self.downloader_music_video.get_music_video_id_from_song_id(
-                                track_id, queue_item.metadata["artists"][0]["id"]
-                            )
-                        )
-                        if not music_video_id:
-                            self.logger.warning(
-                                f"({queue_progress}) No music video alternative found, skipping"
-                            )
-                            continue
-                        metadata_gid = self.spotify_api.get_gid_metadata(
-                            self.spotify_api.track_id_to_gid(music_video_id)
-                        )
-                        self.logger.warning(
-                            f"({queue_progress}) Switching to download music video "
-                            f"with title \"{metadata_gid['name']}\""
-                        )
-                    if not metadata_gid.get("original_video"):
-                        if metadata_gid.get("has_lyrics") and self.spotify_api.is_premium:
-                            self.logger.debug("Getting lyrics")
-                            lyrics = self.downloader_song.get_lyrics(track_id)
-                        else:
-                            lyrics = Lyrics()
-                        self.logger.debug("Getting album metadata")
-                        album_metadata = self.spotify_api.get_album(
-                            self.spotify_api.gid_to_track_id(metadata_gid["album"]["gid"])
-                        )
-                        self.logger.debug("Getting track credits")
-                        track_credits = self.spotify_api.get_track_credits(track_id)
-                        tags = self.downloader_song.get_tags(
-                            metadata_gid,
-                            album_metadata,
-                            track_credits,
-                            lyrics.unsynced,
-                        )
-                        final_path = self.downloader_song.get_final_path(tags)
-                        lrc_path = self.downloader_song.get_lrc_path(final_path)
-                        cover_path = self.downloader_song.get_cover_path(final_path)
-                        cover_url = self.downloader.get_cover_url(metadata_gid, "LARGE")
-                        if self.lrc_only:
-                            pass
-                        elif final_path.exists() and not overwrite:
-                            self.logger.warning(
-                                f'({queue_progress}) Track already exists at "{final_path}", skipping'
-                            )
-                        else:
-                            self.logger.debug("Getting file info")
-                            file_id = self.downloader_song.get_file_id(metadata_gid)
-                            if not file_id:
-                                self.logger.error(
-                                    f"({queue_progress}) Track not available on Spotify's "
-                                    "servers and no alternative found, skipping"
-                                )
-                                continue
-                            self.logger.debug("Getting PSSH")
-                            pssh = self.spotify_api.get_pssh(file_id)
-                            self.logger.debug("Getting decryption key")
-                            decryption_key = self.downloader_song.get_decryption_key(pssh)
-                            self.logger.debug("Getting stream URL")
-                            stream_url = self.spotify_api.get_stream_url(file_id)
-                            encrypted_path = self.downloader.get_encrypted_path(track_id, ".m4a")
-                            decrypted_path = self.downloader.get_decrypted_path(track_id, ".m4a")
-                            self.logger.debug(f'Downloading to "{encrypted_path}"')
-                            self.downloader_song.download(encrypted_path, stream_url)
-                            remuxed_path = self.downloader.get_remuxed_path(track_id, ".m4a")
-                            self.logger.debug(f'Decrypting/Remuxing to "{remuxed_path}"')
-                            self.downloader_song.remux(
-                                encrypted_path,
-                                decrypted_path,
-                                remuxed_path,
-                                decryption_key,
-                            )
-                            self.logger.debug("Applying tags")
-                            self.downloader.apply_tags(remuxed_path, tags, cover_url)
-                            self.logger.debug(f'Moving to "{final_path}"')
-                            self.downloader.move_to_final_path(remuxed_path, final_path)
-                        if no_lrc or not lyrics.synced:
-                            pass
-                        elif lrc_path.exists() and not overwrite:
-                            self.logger.debug(
-                                f'Synced lyrics already exists at "{lrc_path}", skipping'
-                            )
-                        else:
-                            self.logger.debug(f'Saving synced lyrics to "{lrc_path}"')
-                            self.downloader_song.save_lrc(lrc_path, lyrics.synced)
-                        if self.lrc_only or not save_cover:
-                            pass
-                        elif cover_path.exists() and not overwrite:
-                            self.logger.debug(
-                                f'Cover already exists at "{cover_path}", skipping'
-                            )
-                        else:
-                            self.logger.debug(f'Saving cover to "{cover_path}"')
-                            self.downloader.save_cover(cover_path, cover_url)
-                    elif not self.spotify_api.is_premium:
-                        self.logger.error(
-                            f"({queue_progress}) Cannot download music videos with a free account, skipping"
-                        )
-                    elif self.lrc_only:
-                        self.logger.warning(
-                            f"({queue_progress}) Music videos are not downloadable with "
-                            "current settings, skipping"
-                        )
-                    else:
-                        cover_url = self.downloader.get_cover_url(metadata_gid, "XXLARGE")
-                        self.logger.debug("Getting album metadata")
-                        album_metadata = self.spotify_api.get_album(
-                            self.spotify_api.gid_to_track_id(metadata_gid["album"]["gid"])
-                        )
-                        self.logger.debug("Getting track credits")
-                        track_credits = self.spotify_api.get_track_credits(track_id)
-                        tags = self.downloader_music_video.get_tags(
-                            metadata_gid,
-                            album_metadata,
-                            track_credits,
-                        )
-                        final_path = self.downloader_music_video.get_final_path(tags)
-                        cover_path = self.downloader_music_video.get_cover_path(final_path)
-                        if final_path.exists() and not overwrite:
-                            self.logger.warning(
-                                f'({queue_progress}) Music video already exists at "{final_path}", skipping'
-                            )
-                        else:
-                            self.logger.debug("Getting video manifest")
-                            manifest = self.downloader_music_video.get_manifest(metadata_gid)
-                            stream_info = self.downloader_music_video.get_video_stream_info(
-                                manifest
-                            )
-                            self.logger.debug("Getting decryption key")
-                            decryption_key = self.downloader_music_video.get_decryption_key(
-                                stream_info.pssh
-                            )
-                            m3u8 = self.downloader_music_video.get_m3u8(
-                                stream_info.base_url,
-                                stream_info.initialization_template_url,
-                                stream_info.segment_template_url,
-                                stream_info.end_time_millis,
-                                stream_info.segment_length,
-                                stream_info.profile_id_video,
-                                stream_info.profile_id_audio,
-                                stream_info.file_type_video,
-                                stream_info.file_type_audio,
-                            )
-                            m3u8_path_video = self.downloader_music_video.get_m3u8_path(
-                                track_id, "video"
-                            )
-                            encrypted_path_video = self.downloader.get_encrypted_path(
-                                track_id, "_video.ts"
-                            )
-                            decrypted_path_video = self.downloader.get_decrypted_path(
-                                track_id, "_video.ts"
-                            )
-                            self.logger.debug(f'Downloading video to "{encrypted_path_video}"')
-                            self.downloader_music_video.save_m3u8(m3u8.video, m3u8_path_video)
-                            self.downloader_music_video.download(
-                                m3u8_path_video,
-                                encrypted_path_video,
-                            )
-                            m3u8_path_audio = self.downloader_music_video.get_m3u8_path(
-                                track_id, "audio"
-                            )
-                            encrypted_path_audio = self.downloader.get_encrypted_path(
-                                track_id, "_audio.ts"
-                            )
-                            decrypted_path_audio = self.downloader.get_decrypted_path(
-                                track_id, "_audio.ts"
-                            )
-                            self.logger.debug(f"Downloading audio to {encrypted_path_audio}")
-                            self.downloader_music_video.save_m3u8(m3u8.audio, m3u8_path_audio)
-                            self.downloader_music_video.download(
-                                m3u8_path_audio,
-                                encrypted_path_audio,
-                            )
-                            remuxed_path = self.downloader.get_remuxed_path(track_id, ".m4v")
-                            self.logger.debug(f'Decrypting/Remuxing to "{remuxed_path}"')
-                            self.downloader_music_video.remux(
-                                decryption_key,
-                                encrypted_path_video,
-                                encrypted_path_audio,
-                                decrypted_path_video,
-                                decrypted_path_audio,
-                                remuxed_path,
-                            )
-                            self.logger.debug("Applying tags")
-                            self.downloader.apply_tags(remuxed_path, tags, cover_url)
-                            self.logger.debug(f'Moving to "{final_path}"')
-                            self.downloader.move_to_final_path(remuxed_path, final_path)
-                        if save_cover:
-                            cover_path = self.downloader_music_video.get_cover_path(final_path)
-                            if cover_path.exists() and not overwrite:
-                                self.logger.debug(
-                                    f'Cover already exists at "{cover_path}", skipping'
-                                )
-                            else:
-                                self.logger.debug(f'Saving cover to "{cover_path}"')
-                                self.downloader.save_cover(cover_path, cover_url)
-                except Exception as e:
-                    error_count += 1
+                queue_progress = f"Item {queue_index}/{len(download_queue)} from URL {url_index}/{len(urls)}"
+                item_name = queue_item.metadata["name"]
+                self.logger.info(f'({queue_progress}) Downloading "{item_name}"')
+
+                with DownloadManager(self.logger, self.downloader, print_exceptions, item_name, on_error=error_tracker.add):
+                    self.process_track(queue_progress, queue_item, overwrite, no_lrc, save_cover)
+
+        self.logger.info(f"Done ({error_tracker.error_count} error(s))")
+
+    def process_track(
+            self,
+            queue_progress: str,
+            queue_item: DownloadQueueItem,
+            overwrite: bool,
+            no_lrc: bool,
+            save_cover: bool
+    ):
+        track = queue_item.metadata
+        track_id = track["id"]
+        self.logger.debug("Getting GID metadata")
+        gid = self.spotify_api.track_id_to_gid(track_id)
+        metadata_gid = self.spotify_api.get_gid_metadata(gid)
+        if self.download_music_video:
+            music_video_id = (
+                self.downloader_music_video.get_music_video_id_from_song_id(
+                    track_id, queue_item.metadata["artists"][0]["id"]
+                )
+            )
+            if not music_video_id:
+                self.logger.warning(
+                    f"({queue_progress}) No music video alternative found, skipping"
+                )
+                return
+            metadata_gid = self.spotify_api.get_gid_metadata(
+                self.spotify_api.track_id_to_gid(music_video_id)
+            )
+            self.logger.warning(
+                f"({queue_progress}) Switching to download music video "
+                f"with title \"{metadata_gid['name']}\""
+            )
+        if not metadata_gid.get("original_video"):
+            if metadata_gid.get("has_lyrics") and self.spotify_api.is_premium:
+                self.logger.debug("Getting lyrics")
+                lyrics = self.downloader_song.get_lyrics(track_id)
+            else:
+                lyrics = Lyrics()
+            self.logger.debug("Getting album metadata")
+            album_metadata = self.spotify_api.get_album(
+                self.spotify_api.gid_to_track_id(metadata_gid["album"]["gid"])
+            )
+            self.logger.debug("Getting track credits")
+            track_credits = self.spotify_api.get_track_credits(track_id)
+            tags = self.downloader_song.get_tags(
+                metadata_gid,
+                album_metadata,
+                track_credits,
+                lyrics.unsynced,
+            )
+            final_path = self.downloader_song.get_final_path(tags)
+            lrc_path = self.downloader_song.get_lrc_path(final_path)
+            cover_path = self.downloader_song.get_cover_path(final_path)
+            cover_url = self.downloader.get_cover_url(metadata_gid, "LARGE")
+            if self.lrc_only:
+                pass
+            elif final_path.exists() and not overwrite:
+                self.logger.warning(
+                    f'({queue_progress}) Track already exists at "{final_path}", skipping'
+                )
+            else:
+                self.logger.debug("Getting file info")
+                file_id = self.downloader_song.get_file_id(metadata_gid)
+                if not file_id:
                     self.logger.error(
-                        f'({queue_progress}) Failed to download "{track["name"]}"',
-                        exc_info=print_exceptions,
+                        f"({queue_progress}) Track not available on Spotify's "
+                        "servers and no alternative found, skipping"
                     )
-                finally:
-                    if self.downloader.temp_path.exists():
-                        self.logger.debug(f'Cleaning up "{self.downloader.temp_path}"')
-                        self.downloader.cleanup_temp_path()
-        self.logger.info(f"Done ({error_count} error(s))")
+                    return
+                self.logger.debug("Getting PSSH")
+                pssh = self.spotify_api.get_pssh(file_id)
+                self.logger.debug("Getting decryption key")
+                decryption_key = self.downloader_song.get_decryption_key(pssh)
+                self.logger.debug("Getting stream URL")
+                stream_url = self.spotify_api.get_stream_url(file_id)
+                encrypted_path = self.downloader.get_encrypted_path(track_id, ".m4a")
+                decrypted_path = self.downloader.get_decrypted_path(track_id, ".m4a")
+                self.logger.debug(f'Downloading to "{encrypted_path}"')
+                self.downloader_song.download(encrypted_path, stream_url)
+                remuxed_path = self.downloader.get_remuxed_path(track_id, ".m4a")
+                self.logger.debug(f'Decrypting/Remuxing to "{remuxed_path}"')
+                self.downloader_song.remux(
+                    encrypted_path,
+                    decrypted_path,
+                    remuxed_path,
+                    decryption_key,
+                )
+                self.logger.debug("Applying tags")
+                self.downloader.apply_tags(remuxed_path, tags, cover_url)
+                self.logger.debug(f'Moving to "{final_path}"')
+                self.downloader.move_to_final_path(remuxed_path, final_path)
+            if no_lrc or not lyrics.synced:
+                pass
+            elif lrc_path.exists() and not overwrite:
+                self.logger.debug(
+                    f'Synced lyrics already exists at "{lrc_path}", skipping'
+                )
+            else:
+                self.logger.debug(f'Saving synced lyrics to "{lrc_path}"')
+                self.downloader_song.save_lrc(lrc_path, lyrics.synced)
+            if self.lrc_only or not save_cover:
+                pass
+            elif cover_path.exists() and not overwrite:
+                self.logger.debug(
+                    f'Cover already exists at "{cover_path}", skipping'
+                )
+            else:
+                self.logger.debug(f'Saving cover to "{cover_path}"')
+                self.downloader.save_cover(cover_path, cover_url)
+        elif not self.spotify_api.is_premium:
+            self.logger.error(
+                f"({queue_progress}) Cannot download music videos with a free account, skipping"
+            )
+        elif self.lrc_only:
+            self.logger.warning(
+                f"({queue_progress}) Music videos are not downloadable with "
+                "current settings, skipping"
+            )
+        else:
+            cover_url = self.downloader.get_cover_url(metadata_gid, "XXLARGE")
+            self.logger.debug("Getting album metadata")
+            album_metadata = self.spotify_api.get_album(
+                self.spotify_api.gid_to_track_id(metadata_gid["album"]["gid"])
+            )
+            self.logger.debug("Getting track credits")
+            track_credits = self.spotify_api.get_track_credits(track_id)
+            tags = self.downloader_music_video.get_tags(
+                metadata_gid,
+                album_metadata,
+                track_credits,
+            )
+            final_path = self.downloader_music_video.get_final_path(tags)
+            cover_path = self.downloader_music_video.get_cover_path(final_path)
+            if final_path.exists() and not overwrite:
+                self.logger.warning(
+                    f'({queue_progress}) Music video already exists at "{final_path}", skipping'
+                )
+            else:
+                self.logger.debug("Getting video manifest")
+                manifest = self.downloader_music_video.get_manifest(metadata_gid)
+                stream_info = self.downloader_music_video.get_video_stream_info(
+                    manifest
+                )
+                self.logger.debug("Getting decryption key")
+                decryption_key = self.downloader_music_video.get_decryption_key(
+                    stream_info.pssh
+                )
+                m3u8 = self.downloader_music_video.get_m3u8(
+                    stream_info.base_url,
+                    stream_info.initialization_template_url,
+                    stream_info.segment_template_url,
+                    stream_info.end_time_millis,
+                    stream_info.segment_length,
+                    stream_info.profile_id_video,
+                    stream_info.profile_id_audio,
+                    stream_info.file_type_video,
+                    stream_info.file_type_audio,
+                )
+                m3u8_path_video = self.downloader_music_video.get_m3u8_path(
+                    track_id, "video"
+                )
+                encrypted_path_video = self.downloader.get_encrypted_path(
+                    track_id, "_video.ts"
+                )
+                decrypted_path_video = self.downloader.get_decrypted_path(
+                    track_id, "_video.ts"
+                )
+                self.logger.debug(f'Downloading video to "{encrypted_path_video}"')
+                self.downloader_music_video.save_m3u8(m3u8.video, m3u8_path_video)
+                self.downloader_music_video.download(
+                    m3u8_path_video,
+                    encrypted_path_video,
+                )
+                m3u8_path_audio = self.downloader_music_video.get_m3u8_path(
+                    track_id, "audio"
+                )
+                encrypted_path_audio = self.downloader.get_encrypted_path(
+                    track_id, "_audio.ts"
+                )
+                decrypted_path_audio = self.downloader.get_decrypted_path(
+                    track_id, "_audio.ts"
+                )
+                self.logger.debug(f"Downloading audio to {encrypted_path_audio}")
+                self.downloader_music_video.save_m3u8(m3u8.audio, m3u8_path_audio)
+                self.downloader_music_video.download(
+                    m3u8_path_audio,
+                    encrypted_path_audio,
+                )
+                remuxed_path = self.downloader.get_remuxed_path(track_id, ".m4v")
+                self.logger.debug(f'Decrypting/Remuxing to "{remuxed_path}"')
+                self.downloader_music_video.remux(
+                    decryption_key,
+                    encrypted_path_video,
+                    encrypted_path_audio,
+                    decrypted_path_video,
+                    decrypted_path_audio,
+                    remuxed_path,
+                )
+                self.logger.debug("Applying tags")
+                self.downloader.apply_tags(remuxed_path, tags, cover_url)
+                self.logger.debug(f'Moving to "{final_path}"')
+                self.downloader.move_to_final_path(remuxed_path, final_path)
+            if save_cover:
+                cover_path = self.downloader_music_video.get_cover_path(final_path)
+                if cover_path.exists() and not overwrite:
+                    self.logger.debug(
+                        f'Cover already exists at "{cover_path}", skipping'
+                    )
+                else:
+                    self.logger.debug(f'Saving cover to "{cover_path}"')
+                    self.downloader.save_cover(cover_path, cover_url)
