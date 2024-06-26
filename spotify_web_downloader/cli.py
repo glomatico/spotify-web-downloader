@@ -261,6 +261,20 @@ def load_config_file(
     default=downloader_music_video_sig.parameters["download_mode"].default,
     help="Download mode for videos.",
 )
+@click.option(
+    "--use-queue-index-for-track",
+    "-qit",
+    is_flag=True,
+    default=False,
+    help="Use the order in which the tracks are downloaded to determine the track number (usefull for downloading playlists).",
+)
+@click.option(
+    "--directly-to-output",
+    "-do",
+    is_flag=True,
+    default=False,
+    help="Download straight to specified output folder, or to ./Spotify/{track} if not specified (usefull for downloading playlists).",
+)
 # This option should always be last
 @click.option(
     "--no-config-file",
@@ -302,6 +316,8 @@ def main(
     template_folder_music_video: str,
     template_file_music_video: str,
     download_mode_video: DownloadModeVideo,
+    use_queue_index_for_track: bool,
+    directly_to_output: bool,
     no_config_file: bool,
 ) -> None:
     logging.basicConfig(
@@ -443,7 +459,11 @@ def main(
                         track_credits,
                         lyrics.unsynced,
                     )
-                    final_path = downloader_song.get_final_path(tags)
+
+                    if(use_queue_index_for_track):
+                        tags["track"] = queue_index
+                        
+                    final_path = downloader_song.get_final_path(tags, directly_to_output=directly_to_output)
                     lrc_path = downloader_song.get_lrc_path(final_path)
                     cover_path = downloader_song.get_cover_path(final_path)
                     cover_url = downloader.get_cover_url(metadata_gid, "LARGE")

@@ -33,7 +33,7 @@ class DownloaderSong:
     def _set_codec(self):
         self.codec = "MP4_256" if self.premium_quality else "MP4_128"
 
-    def get_final_path(self, tags: dict) -> Path:
+    def get_final_path(self, tags: dict, directly_to_output: bool = False) -> Path:
         final_path_folder = (
             self.template_folder_compilation.split("/")
             if tags["compilation"]
@@ -57,6 +57,10 @@ class DownloaderSong:
             )
             + ".m4a"
         ]
+        if(directly_to_output):
+            return self.downloader.output_path.joinpath(
+                *final_path_file
+            )
         return self.downloader.output_path.joinpath(*final_path_folder).joinpath(
             *final_path_file
         )
