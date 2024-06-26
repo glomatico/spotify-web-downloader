@@ -78,6 +78,8 @@ spotify-web-downloader can be configured using the command line arguments or the
 | `--template-folder-music-video` / `template_folder_music_video` | Template of the music video folders as a format string.                      | `{artist}/Unknown Album`                     |
 | `--template-file-music-video` / `template_file_music_video`     | Template of the music video files as a format string.                        | `{title}`                                    |
 | `--download-mode-video` / `download_mode_video`                 | Download mode for videos.                                                    | `ytdlp`                                      |
+| `--use-queue-index-for-track`, `-qit` / `use_queue_index_for_track`| Use the order in which the tracks are downloaded to determine the track number (usefull for downloading playlists).   | `false`                                      |
+| `--directly-to-output`, `-do` / `directly_to_output`                 | Download straight to specified output folder, or to `./Spotify/{track}` if not specified (usefull for downloading playlists). | `false`                                      |
 | `--no-config-file`, `-n` / -                                    | Do not use a config file.                                                    | `false`                                      |
 
 
