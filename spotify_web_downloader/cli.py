@@ -462,6 +462,8 @@ def main(
 
                     if(use_queue_index_for_track):
                         tags["track"] = queue_index
+                        tags["disc"] = 1
+                        tags["disc_total"] = 1
                         
                     final_path = downloader_song.get_final_path(tags, directly_to_output=directly_to_output)
                     lrc_path = downloader_song.get_lrc_path(final_path)
