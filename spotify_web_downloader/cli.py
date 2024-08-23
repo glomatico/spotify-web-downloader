@@ -345,8 +345,6 @@ def main(
         template_file_music_video,
         download_mode_video,
     )
-    if not spotify_api.is_premium:
-        logger.warning("Free account detected, lyrics will not be downloaded")
     if not lrc_only:
         if wvd_path and not wvd_path.exists():
             logger.critical(X_NOT_FOUND_STRING.format(".wvd file", wvd_path))
@@ -377,10 +375,10 @@ def main(
                     X_NOT_FOUND_STRING.format("mp4decrypt", mp4decrypt_path)
                 )
                 return
-        if not spotify_api.is_premium and premium_quality:
+        if not spotify_api.config_info["isPremium"] and premium_quality:
             logger.critical("Cannot download in premium quality with a free account")
             return
-        if not spotify_api.is_premium and download_music_video:
+        if not spotify_api.config_info["isPremium"] and download_music_video:
             logger.critical("Cannot download music videos with a free account")
             return
     error_count = 0
@@ -426,7 +424,7 @@ def main(
                         f"with title \"{metadata_gid['name']}\""
                     )
                 if not metadata_gid.get("original_video"):
-                    if metadata_gid.get("has_lyrics") and spotify_api.is_premium:
+                    if metadata_gid.get("has_lyrics"):
                         logger.debug("Getting lyrics")
                         lyrics = downloader_song.get_lyrics(track_id)
                     else:
@@ -502,7 +500,7 @@ def main(
                     else:
                         logger.debug(f'Saving cover to "{cover_path}"')
                         downloader.save_cover(cover_path, cover_url)
-                elif not spotify_api.is_premium:
+                elif not spotify_api.config_info["isPremium"]:
                     logger.error(
                         f"({queue_progress}) Cannot download music videos with a free account, skipping"
                     )
