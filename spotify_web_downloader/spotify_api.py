@@ -13,6 +13,7 @@ import requests
 
 class SpotifyApi:
     SPOTIFY_HOME_PAGE_URL = "https://open.spotify.com/"
+    CLIENT_VERSION = "1.2.46.25.g7f189073"
     GID_METADATA_API_URL = (
         "https://spclient.wg.spotify.com/metadata/4/track/{gid}?market=from_token"
     )
@@ -33,7 +34,7 @@ class SpotifyApi:
 
     def __init__(
         self,
-        cookies_path: Path = Path("./cookies.txt"),
+        cookies_path: Path | None = Path("./cookies.txt"),
     ):
         self.cookies_path = cookies_path
         self._setup_session()
@@ -46,23 +47,39 @@ class SpotifyApi:
             self.session.cookies.update(cookies)
         self.session.headers.update(
             {
-                "sec-ch-ua": '"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',
-                "accept-language": "en-US",
-                "sec-ch-ua-mobile": "?0",
-                "app-platform": "WebPlayer",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
                 "accept": "application/json",
-                "Referer": self.SPOTIFY_HOME_PAGE_URL,
-                "spotify-app-version": "1.2.35.284.g56aba07f",
+                "accept-language": "en-US",
+                "content-type": "application/json",
+                "origin": self.SPOTIFY_HOME_PAGE_URL,
+                "priority": "u=1, i",
+                "referer": self.SPOTIFY_HOME_PAGE_URL,
+                "sec-ch-ua": '"Not)A;Brand";v="99", "Google Chrome";v="127", "Chromium";v="127"',
+                "sec-ch-ua-mobile": "?0",
                 "sec-ch-ua-platform": '"Windows"',
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-site",
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
+                "spotify-app-version": self.CLIENT_VERSION,
+                "app-platform": "WebPlayer",
             }
         )
         home_page = self.session.get(self.SPOTIFY_HOME_PAGE_URL).text
-        token = re.search(r'accessToken":"(.*?)"', home_page).group(1)
-        self.is_premium = re.search(r'isPremium":(.*?),', home_page).group(1) == "true"
+        self.session_info = json.loads(
+            re.search(
+                r'<script id="session" data-testid="session" type="application/json">(.+?)</script>',
+                home_page,
+            ).group(1)
+        )
+        self.config_info = json.loads(
+            re.search(
+                r'<script id="config" data-testid="config" type="application/json">(.+?)</script>',
+                home_page,
+            ).group(1)
+        )
         self.session.headers.update(
             {
-                "authorization": f"Bearer {token}",
+                "Authorization": f"Bearer {self.session_info['accessToken']}",
             }
         )
 
