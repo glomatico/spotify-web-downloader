@@ -239,7 +239,7 @@ class DownloaderMusicVideo:
             "media_type": 6,
             "producer": self.downloader.get_artist(producers) if producers else None,
             "rating": 1 if metadata_gid.get("explicit") else 0,
-            "title": album_metadata["name"],
+            "title": metadata_gid["name"],
             "release_date": self.downloader.get_release_date_tag(
                 release_date_datetime_obj
             ),
