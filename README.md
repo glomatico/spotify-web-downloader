@@ -1,5 +1,5 @@
 # Spotify Web Downloader
-A Python CLI app for downloading songs/music videos/albums/playlists directly from Spotify.
+A Python CLI app for downloading songs and music videos directly from Spotify.
 
 **Discord Server:** https://discord.gg/aBjMEZ9tnq
 
@@ -44,7 +44,11 @@ spotify-web-downloader [OPTIONS] URLS...
     ```
 
 ## Configuration
-spotify-web-downloader can be configured using the command line arguments or the config file. The config file is created automatically when you run spotify-web-downloader for the first time at `~/.spotify-web-downloader/config.json` on Linux and `%USERPROFILE%\.spotify-web-downloader\config.json` on Windows. Config file values can be overridden using command line arguments.
+spotify-web-downloader can be configured using the command line arguments or the config file.
+
+The config file is created automatically when you run spotify-web-downloader for the first time at `~/.spotify-web-downloader/config.json` on Linux and `%USERPROFILE%\.spotify-web-downloader\config.json` on Windows.
+
+Config file values can be overridden using command line arguments.
 | Command line argument / Config file key                         | Description                                                                  | Default value                                |
 | --------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------- |
 | `--download-music-video` / `download_music_video`               | Attempt to download music videos from songs (can lead to incorrect results). | `false`                                      |
