@@ -10,6 +10,8 @@ from pathlib import Path
 import base62
 import requests
 
+from .utils import check_response
+
 
 class SpotifyApi:
     SPOTIFY_HOME_PAGE_URL = "https://open.spotify.com/"
@@ -41,15 +43,10 @@ class SpotifyApi:
 
     def _setup_session(self):
         self.session = requests.Session()
-        clear_token = None
         if self.cookies_path:
             cookies = MozillaCookieJar(self.cookies_path)
             cookies.load(ignore_discard=True, ignore_expires=True)
             self.session.cookies.update(cookies)
-            clear_auth_info = self.get_clear_auth_info(
-                self.session.cookies.get("sp_dc")
-            )
-            clear_token = clear_auth_info["accessToken"]
         self.session.headers.update(
             {
                 "accept": "application/json",
@@ -69,7 +66,7 @@ class SpotifyApi:
                 "app-platform": "WebPlayer",
             }
         )
-        home_page = self.session.get(self.SPOTIFY_HOME_PAGE_URL).text
+        home_page = self.get_home_page(self.session.cookies.get("sp_dc"))
         self.session_info = json.loads(
             re.search(
                 r'<script id="session" data-testid="session" type="application/json">(.+?)</script>',
@@ -84,18 +81,9 @@ class SpotifyApi:
         )
         self.session.headers.update(
             {
-                "Authorization": f"Bearer {clear_token or self.session_info['accessToken']}",
+                "Authorization": f"Bearer {self.session_info['accessToken']}",
             }
         )
-
-    @staticmethod
-    def _check_response(response: requests.Response):
-        try:
-            response.raise_for_status()
-        except requests.HTTPError:
-            raise Exception(
-                f"Request failed with status code {response.status_code}: {response.text}"
-            )
 
     @staticmethod
     def track_id_to_gid(track_id: str) -> str:
@@ -107,12 +95,12 @@ class SpotifyApi:
 
     def get_gid_metadata(self, gid: str) -> dict:
         response = self.session.get(self.GID_METADATA_API_URL.format(gid=gid))
-        self._check_response(response)
+        check_response(response)
         return response.json()
 
     def get_video_manifest(self, gid: str) -> dict:
         response = self.session.get(self.VIDEO_MANIFEST_API_URL.format(gid=gid))
-        self._check_response(response)
+        check_response(response)
         return response.json()
 
     def get_widevine_license_music(self, challenge: bytes) -> bytes:
@@ -120,7 +108,7 @@ class SpotifyApi:
             self.WIDEVINE_LICENSE_API_URL.format(type="audio"),
             challenge,
         )
-        self._check_response(response)
+        check_response(response)
         return response.content
 
     def get_widevine_license_video(self, challenge: bytes) -> bytes:
@@ -128,38 +116,38 @@ class SpotifyApi:
             self.WIDEVINE_LICENSE_API_URL.format(type="video"),
             challenge,
         )
-        self._check_response(response)
+        check_response(response)
         return response.content
 
     def get_lyrics(self, track_id: str) -> dict | None:
         response = self.session.get(self.LYRICS_API_URL.format(track_id=track_id))
         if response.status_code == 404:
             return None
-        self._check_response(response)
+        check_response(response)
         return response.json()
 
     def get_pssh(self, file_id: str) -> str:
         response = requests.get(self.PSSH_API_URL.format(file_id=file_id))
-        self._check_response(response)
+        check_response(response)
         return response.json()["pssh"]
 
     def get_stream_url(self, file_id: str) -> str:
         response = self.session.get(self.STREAM_URL_API_URL.format(file_id=file_id))
-        self._check_response(response)
+        check_response(response)
         return response.json()["cdnurl"][0]
 
     def get_track(self, track_id: str) -> dict:
         response = self.session.get(
             self.METADATA_API_URL.format(type="tracks", track_id=track_id)
         )
-        self._check_response(response)
+        check_response(response)
         return response.json()
 
     def extend_track_collection(self, track_collection: dict) -> dict:
         next_url = track_collection["tracks"]["next"]
         while next_url is not None:
             response = self.session.get(next_url)
-            self._check_response(response)
+            check_response(response)
             next_tracks = response.json()
             track_collection["tracks"]["items"].extend(next_tracks["items"])
             next_url = next_tracks["next"]
@@ -175,7 +163,7 @@ class SpotifyApi:
         response = self.session.get(
             self.METADATA_API_URL.format(type="albums", track_id=album_id)
         )
-        self._check_response(response)
+        check_response(response)
         album = response.json()
         if extend:
             album = self.extend_track_collection(album)
@@ -189,7 +177,7 @@ class SpotifyApi:
         response = self.session.get(
             self.METADATA_API_URL.format(type="playlists", track_id=playlist_id)
         )
-        self._check_response(response)
+        check_response(response)
         playlist = response.json()
         if extend:
             playlist = self.extend_track_collection(playlist)
@@ -218,25 +206,22 @@ class SpotifyApi:
                 ),
             },
         )
-        self._check_response(response)
+        check_response(response)
         return response.json()
 
     def get_track_credits(self, track_id: str) -> dict:
         response = self.session.get(
             self.TRACK_CREDITS_API_URL.format(track_id=track_id)
         )
-        self._check_response(response)
+        check_response(response)
         return response.json()
 
     @staticmethod
-    def get_clear_auth_info(sp_dc: str) -> str:
+    def get_home_page(sp_dc: str = None) -> str:
+        cookies = {"sp_dc": sp_dc} if sp_dc else None
         response = requests.get(
-            "https://open.spotify.com/get_access_token",
-            cookies={
-                "sp_dc": sp_dc,
-            },
+            SpotifyApi.SPOTIFY_HOME_PAGE_URL,
+            cookies=cookies,
         )
-        response.raise_for_status()
-        auth_info: dict = response.json()
-        assert auth_info.get("accessToken")
-        return auth_info
+        check_response(response)
+        return response.text
