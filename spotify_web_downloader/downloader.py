@@ -35,7 +35,7 @@ class Downloader:
         remux_mode: RemuxMode = RemuxMode.FFMPEG,
         date_tag_template: str = "%Y-%m-%dT%H:%M:%SZ",
         exclude_tags: str = None,
-        truncate: int = 40,
+        truncate: int = None,
         silence: bool = False,
     ):
         self.spotify_api = spotify_api
@@ -72,7 +72,8 @@ class Downloader:
         )
 
     def _set_truncate(self):
-        self.truncate = None if self.truncate < 4 else self.truncate
+        if self.truncate is not None:
+            self.truncate = None if self.truncate < 4 else self.truncate
 
     def _set_subprocess_additional_args(self):
         if self.silence:
