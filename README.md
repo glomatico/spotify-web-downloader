@@ -5,13 +5,13 @@ A Python CLI app for downloading songs and music videos directly from Spotify.
 
 ## Features
 * Download songs in AAC 128kbps or in AAC 256kbps with a premium account
+* Download synced lyrics
 * Download music videos with a premium account
-* Download synced lyrics with a premium account
 * Highly configurable
 
 ## Prerequisites
 * Python 3.8 or higher
-* The cookies file of your Spotify account (free or premium)
+* The cookies file of your Spotify browser session in Netscape format (free or premium)
     * You can get your cookies by using one of the following extensions on your browser of choice at the Spotify website with your account signed in:
         * Firefox: https://addons.mozilla.org/addon/export-cookies-txt
         * Chromium based browsers: https://chrome.google.com/webstore/detail/gdocmgbfkjnnpapoeobnolbbkoibbcif
