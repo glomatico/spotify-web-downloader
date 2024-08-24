@@ -41,10 +41,15 @@ class SpotifyApi:
 
     def _setup_session(self):
         self.session = requests.Session()
+        clear_token = None
         if self.cookies_path:
             cookies = MozillaCookieJar(self.cookies_path)
             cookies.load(ignore_discard=True, ignore_expires=True)
             self.session.cookies.update(cookies)
+            clear_auth_info = self.get_clear_auth_info(
+                self.session.cookies.get("sp_dc")
+            )
+            clear_token = clear_auth_info["accessToken"]
         self.session.headers.update(
             {
                 "accept": "application/json",
@@ -79,7 +84,7 @@ class SpotifyApi:
         )
         self.session.headers.update(
             {
-                "Authorization": f"Bearer {self.session_info['accessToken']}",
+                "Authorization": f"Bearer {clear_token or self.session_info['accessToken']}",
             }
         )
 
@@ -222,3 +227,16 @@ class SpotifyApi:
         )
         self._check_response(response)
         return response.json()
+
+    @staticmethod
+    def get_clear_auth_info(sp_dc: str) -> str:
+        response = requests.get(
+            "https://open.spotify.com/get_access_token",
+            cookies={
+                "sp_dc": sp_dc,
+            },
+        )
+        response.raise_for_status()
+        auth_info: dict = response.json()
+        assert auth_info.get("accessToken")
+        return auth_info
