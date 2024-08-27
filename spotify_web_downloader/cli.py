@@ -76,7 +76,7 @@ def load_config_file(
 @click.option(
     "--wait-interval",
     "-w",
-    type=int,
+    type=float,
     default=10,
     help="Wait interval between downloads in seconds.",
 )
@@ -285,7 +285,7 @@ def load_config_file(
 )
 def main(
     urls: list[str],
-    wait_interval: int,
+    wait_interval: float,
     download_music_video: bool,
     force_premium: bool,
     save_cover: bool,
@@ -634,6 +634,8 @@ def main(
                     logger.debug(f'Cleaning up "{temp_path}"')
                     downloader.cleanup_temp_path()
                 if wait_interval > 0:
-                    logger.debug(f"Waiting for {wait_interval} second(s) before continuing")
+                    logger.debug(
+                        f"Waiting for {wait_interval} second(s) before continuing"
+                    )
                     time.sleep(wait_interval)
     logger.info(f"Done ({error_count} error(s))")
