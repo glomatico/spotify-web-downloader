@@ -107,6 +107,7 @@ class Downloader:
                     for track_metadata in self.spotify_api.get_album(url_info.id)[
                         "tracks"
                     ]["items"]
+                    if track_metadata is not None
                 ]
             )
         elif url_info.type == "playlist":
@@ -116,6 +117,7 @@ class Downloader:
                     for track_metadata in self.spotify_api.get_playlist(url_info.id)[
                         "tracks"
                     ]["items"]
+                    if track_metadata["track"] is not None
                 ]
             )
         elif url_info.type == "track":
