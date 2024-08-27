@@ -51,7 +51,9 @@ The config file is created automatically when you run spotify-web-downloader for
 Config file values can be overridden using command line arguments.
 | Command line argument / Config file key                         | Description                                                                  | Default value                                |
 | --------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------- |
+| `--wait-time`, `-w` / `wait_time`                               | Wait interval between downloads in seconds                                   | `10`                                         |
 | `--download-music-video` / `download_music_video`               | Attempt to download music videos from songs (can lead to incorrect results). | `false`                                      |
+| `--force-premium`, `-f` / `force_premium`                       | Force to detect the account as premium.                                      | `false`                                      |
 | `--save-cover`, `-s` / `save_cover`                             | Save cover as a separate file.                                               | `false`                                      |
 | `--overwrite` / `overwrite`                                     | Overwrite existing files.                                                    | `false`                                      |
 | `--read-urls-as-txt`, `-r` / -                                  | Interpret URLs as paths to text files containing URLs.                       | `false`                                      |
