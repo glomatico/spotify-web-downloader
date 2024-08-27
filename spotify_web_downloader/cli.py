@@ -490,7 +490,9 @@ def main(
                         logger.debug(f'Downloading to "{encrypted_path}"')
                         downloader_song.download(encrypted_path, stream_url)
                         remuxed_path = downloader.get_remuxed_path(track_id, ".m4a")
-                        logger.debug(f'Decrypting/Remuxing to "{remuxed_path}"')
+                        logger.debug(
+                            f'Decrypting/Remuxing to "{decrypted_path}"/"{remuxed_path}"'
+                        )
                         downloader_song.remux(
                             encrypted_path,
                             decrypted_path,
