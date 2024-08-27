@@ -86,6 +86,12 @@ def load_config_file(
     help="Attempt to download music videos from songs (can lead to incorrect results).",
 )
 @click.option(
+    "--force-premium",
+    "-f",
+    is_flag=True,
+    help="Force to detect the account as premium.",
+)
+@click.option(
     "--save-cover",
     "-s",
     is_flag=True,
@@ -281,6 +287,7 @@ def main(
     urls: list[str],
     wait_interval: int,
     download_music_video: bool,
+    force_premium: bool,
     save_cover: bool,
     overwrite: bool,
     read_urls_as_txt: bool,
@@ -384,6 +391,9 @@ def main(
                     X_NOT_FOUND_STRING.format("mp4decrypt", mp4decrypt_path)
                 )
                 return
+        spotify_api.config_info["isPremium"] = (
+            True if force_premium else spotify_api.config_info["isPremium"]
+        )
         if not spotify_api.config_info["isPremium"] and premium_quality:
             logger.critical("Cannot download in premium quality with a free account")
             return
