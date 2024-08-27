@@ -4,6 +4,7 @@ import functools
 import json
 import re
 import time
+import typing
 from http.cookiejar import MozillaCookieJar
 from pathlib import Path
 
@@ -143,16 +144,18 @@ class SpotifyApi:
         check_response(response)
         return response.json()
 
-    def extend_track_collection(self, track_collection: dict) -> dict:
+    def extend_track_collection(
+        self,
+        track_collection: dict,
+    ) -> typing.Generator[dict, None, None]:
         next_url = track_collection["tracks"]["next"]
         while next_url is not None:
             response = self.session.get(next_url)
             check_response(response)
             next_tracks = response.json()
-            track_collection["tracks"]["items"].extend(next_tracks["items"])
+            yield next_tracks
             next_url = next_tracks["next"]
             time.sleep(self.EXTEND_TRACK_COLLECTION_WAIT_TIME)
-        return track_collection
 
     @functools.lru_cache()
     def get_album(
@@ -166,7 +169,9 @@ class SpotifyApi:
         check_response(response)
         album = response.json()
         if extend:
-            album = self.extend_track_collection(album)
+            album["tracks"]["items"].extend(
+                [tracks["tracks"] for tracks in self.extend_track_collection(album)]
+            )
         return album
 
     def get_playlist(
@@ -180,7 +185,9 @@ class SpotifyApi:
         check_response(response)
         playlist = response.json()
         if extend:
-            playlist = self.extend_track_collection(playlist)
+            playlist["tracks"]["items"].extend(
+                [tracks["track"] for tracks in self.extend_track_collection(playlist)]
+            )
         return playlist
 
     def get_now_playing_view(self, track_id: str, artist_id: str) -> dict:
