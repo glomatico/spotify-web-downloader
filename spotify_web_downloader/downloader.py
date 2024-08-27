@@ -20,6 +20,7 @@ from .spotify_api import SpotifyApi
 
 class Downloader:
     ILLEGAL_CHARACTERS_REGEX = r'[\\/:*?"<>|;]'
+    URL_RE = r"(album|playlist|track)/(\w{22})"
 
     def __init__(
         self,
@@ -91,7 +92,7 @@ class Downloader:
             self.cdm = Cdm.from_device(Device.loads(HARDCODED_WVD))
 
     def get_url_info(self, url: str) -> UrlInfo:
-        url_regex_result = re.search(r"(album|playlist|track)/(\w{22})", url)
+        url_regex_result = re.search(self.URL_RE, url)
         if url_regex_result is None:
             raise Exception("Invalid URL")
         return UrlInfo(type=url_regex_result.group(1), id=url_regex_result.group(2))
