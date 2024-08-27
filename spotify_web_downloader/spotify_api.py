@@ -152,9 +152,9 @@ class SpotifyApi:
         while next_url is not None:
             response = self.session.get(next_url)
             check_response(response)
-            next_tracks = response.json()
-            yield next_tracks
-            next_url = next_tracks["next"]
+            extended_collection = response.json()
+            yield extended_collection
+            next_url = extended_collection["next"]
             time.sleep(self.EXTEND_TRACK_COLLECTION_WAIT_TIME)
 
     @functools.lru_cache()
@@ -170,7 +170,11 @@ class SpotifyApi:
         album = response.json()
         if extend:
             album["tracks"]["items"].extend(
-                [tracks["tracks"] for tracks in self.extend_track_collection(album)]
+                [
+                    item
+                    for extended_collection in self.extend_track_collection(album)
+                    for item in extended_collection["items"]
+                ]
             )
         return album
 
@@ -186,7 +190,11 @@ class SpotifyApi:
         playlist = response.json()
         if extend:
             playlist["tracks"]["items"].extend(
-                [tracks["track"] for tracks in self.extend_track_collection(playlist)]
+                [
+                    item
+                    for extended_collection in self.extend_track_collection(playlist)
+                    for item in extended_collection["items"]
+                ]
             )
         return playlist
 
