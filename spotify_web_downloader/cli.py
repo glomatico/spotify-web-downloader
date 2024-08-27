@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import json
 import logging
+import time
 from enum import Enum
 from pathlib import Path
 
@@ -71,6 +72,13 @@ def load_config_file(
     nargs=-1,
     type=str,
     required=True,
+)
+@click.option(
+    "--wait-interval",
+    "-w",
+    type=int,
+    default=10,
+    help="Wait interval between downloads in seconds.",
 )
 @click.option(
     "--download-music-video",
@@ -271,6 +279,7 @@ def load_config_file(
 )
 def main(
     urls: list[str],
+    wait_interval: int,
     download_music_video: bool,
     save_cover: bool,
     overwrite: bool,
@@ -612,4 +621,6 @@ def main(
                 if temp_path.exists():
                     logger.debug(f'Cleaning up "{temp_path}"')
                     downloader.cleanup_temp_path()
+                logger.debug(f"Waiting for {wait_interval} second(s) before continuing")
+                time.sleep(wait_interval)
     logger.info(f"Done ({error_count} error(s))")
