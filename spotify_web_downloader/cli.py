@@ -405,6 +405,7 @@ def main(
         urls = [url.strip() for url in Path(urls[0]).read_text().splitlines()]
     for url_index, url in enumerate(urls, start=1):
         url_progress = f"URL {url_index}/{len(urls)}"
+        logger.info(f'({url_progress}) Checking "{url}"')
         try:
             url_info = downloader.get_url_info(url)
             download_queue = downloader.get_download_queue(url_info)
