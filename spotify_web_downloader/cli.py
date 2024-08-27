@@ -368,7 +368,7 @@ def main(
         logger.debug("Setting up CDM")
         downloader.set_cdm()
         if not downloader.ffmpeg_path_full and remux_mode == RemuxMode.FFMPEG:
-            logger.critical(X_NOT_FOUND_STRING.format("ffmpeg", ffmpeg_path))
+            logger.critical(X_NOT_FOUND_STRING.format("FFmpeg", ffmpeg_path))
             return
         if (
             download_mode_song == DownloadModeSong.ARIA2C
@@ -380,7 +380,7 @@ def main(
             download_mode_video == DownloadModeVideo.NM3U8DLRE
             and not downloader.nm3u8dlre_path_full
         ):
-            logger.critical(X_NOT_FOUND_STRING.format("nm3u8dlre", nm3u8dlre_path))
+            logger.critical(X_NOT_FOUND_STRING.format("N_m3u8DL-RE", nm3u8dlre_path))
             return
         if remux_mode == RemuxMode.MP4BOX:
             if not downloader.mp4box_path_full:
