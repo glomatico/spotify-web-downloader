@@ -21,6 +21,7 @@ from .spotify_api import SpotifyApi
 class Downloader:
     ILLEGAL_CHARACTERS_REGEX = r'[\\/:*?"<>|;]'
     URL_RE = r"(album|playlist|track)/(\w{22})"
+    ILLEGAL_CHARACTERS_REPLACEMENT = "_"
 
     def __init__(
         self,
@@ -124,11 +125,15 @@ class Downloader:
         return download_queue
 
     def get_sanitized_string(self, dirty_string: str, is_folder: bool) -> str:
-        dirty_string = re.sub(self.ILLEGAL_CHARACTERS_REGEX, "_", dirty_string)
+        dirty_string = re.sub(
+            self.ILLEGAL_CHARACTERS_REGEX,
+            self.ILLEGAL_CHARACTERS_REPLACEMENT,
+            dirty_string,
+        )
         if is_folder:
             dirty_string = dirty_string[: self.truncate]
             if dirty_string.endswith("."):
-                dirty_string = dirty_string[:-1] + "_"
+                dirty_string = dirty_string[:-1] + self.ILLEGAL_CHARACTERS_REPLACEMENT
         else:
             if self.truncate is not None:
                 dirty_string = dirty_string[: self.truncate - 4]
