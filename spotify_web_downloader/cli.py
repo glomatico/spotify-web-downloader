@@ -633,6 +633,7 @@ def main(
                 if temp_path.exists():
                     logger.debug(f'Cleaning up "{temp_path}"')
                     downloader.cleanup_temp_path()
-                logger.debug(f"Waiting for {wait_interval} second(s) before continuing")
-                time.sleep(wait_interval)
+                if wait_interval > 0:
+                    logger.debug(f"Waiting for {wait_interval} second(s) before continuing")
+                    time.sleep(wait_interval)
     logger.info(f"Done ({error_count} error(s))")
