@@ -414,7 +414,7 @@ def main(
                 logger.debug("Getting GID metadata")
                 gid = spotify_api.track_id_to_gid(track_id)
                 metadata_gid = spotify_api.get_gid_metadata(gid)
-                if download_music_video:
+                if download_music_video and not metadata_gid.get("original_video"):
                     music_video_id = (
                         downloader_music_video.get_music_video_id_from_song_id(
                             track_id, queue_item.metadata["artists"][0]["id"]
