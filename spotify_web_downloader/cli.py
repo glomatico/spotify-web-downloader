@@ -523,7 +523,7 @@ def main(
                         logger.debug(
                             f'Cover already exists at "{cover_path}", skipping'
                         )
-                    else:
+                    elif cover_url is not None:
                         logger.debug(f'Saving cover to "{cover_path}"')
                         downloader.save_cover(cover_path, cover_url)
                 elif not spotify_api.config_info["isPremium"]:
@@ -625,7 +625,7 @@ def main(
                             logger.debug(
                                 f'Cover already exists at "{cover_path}", skipping'
                             )
-                        else:
+                        elif cover_url is not None:
                             logger.debug(f'Saving cover to "{cover_path}"')
                             downloader.save_cover(cover_path, cover_url)
             except Exception as e:

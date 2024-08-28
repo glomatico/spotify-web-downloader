@@ -16,6 +16,7 @@ from .enums import RemuxMode
 from .hardcoded_wvd import HARDCODED_WVD
 from .models import DownloadQueueItem, UrlInfo
 from .spotify_api import SpotifyApi
+from .utils import check_response
 
 
 class Downloader:
@@ -174,7 +175,9 @@ class Downloader:
             + f' & {artist_list[-1]["name"]}'
         )
 
-    def get_cover_url(self, metadata_gid: dict, size: str) -> str:
+    def get_cover_url(self, metadata_gid: dict, size: str) -> str | None:
+        if not metadata_gid["album"].get("cover_group"):
+            return None
         return "https://i.scdn.co/image/" + next(
             i["file_id"]
             for i in metadata_gid["album"]["cover_group"]["image"]
@@ -222,8 +225,10 @@ class Downloader:
 
     @staticmethod
     @functools.lru_cache()
-    def get_image_bytes(url: str) -> bytes:
-        return requests.get(url).content
+    def get_response_bytes(url: str) -> bytes:
+        response = requests.get(url)
+        check_response(response)
+        return response.content
 
     def apply_tags(self, fixed_location: Path, tags: dict, cover_url: str):
         to_apply_tags = [
@@ -279,7 +284,8 @@ class Downloader:
 
     @functools.lru_cache()
     def save_cover(self, cover_path: Path, cover_url: str):
-        cover_path.write_bytes(self.get_image_bytes(cover_url))
+        if cover_url is not None:
+            cover_path.write_bytes(self.get_response_bytes(cover_url))
 
     def cleanup_temp_path(self):
         shutil.rmtree(self.temp_path)
