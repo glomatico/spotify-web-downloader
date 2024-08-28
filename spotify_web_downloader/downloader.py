@@ -238,6 +238,8 @@ class Downloader:
         ]
         mp4_tags = {}
         for tag_name in to_apply_tags:
+            if tags.get(tag_name) is None:
+                continue
             if tag_name in ("disc", "disc_total"):
                 if mp4_tags.get("disk") is None:
                     mp4_tags["disk"] = [[0, 0]]
@@ -262,15 +264,12 @@ class Downloader:
                 mp4_tags["----:com.apple.iTunes:LABEL"] = [
                     MP4FreeForm(tags["label"].encode("utf-8"))
                 ]
-            elif (
-                MP4_TAGS_MAP.get(tag_name) is not None
-                and tags.get(tag_name) is not None
-            ):
+            elif MP4_TAGS_MAP.get(tag_name) is not None:
                 mp4_tags[MP4_TAGS_MAP[tag_name]] = [tags[tag_name]]
-        if "cover" not in self.exclude_tags_list:
+        if "cover" not in self.exclude_tags_list and cover_url is not None:
             mp4_tags["covr"] = [
                 MP4Cover(
-                    self.get_image_bytes(cover_url), imageformat=MP4Cover.FORMAT_JPEG
+                    self.get_response_bytes(cover_url), imageformat=MP4Cover.FORMAT_JPEG
                 )
             ]
         mp4 = MP4(fixed_location)
