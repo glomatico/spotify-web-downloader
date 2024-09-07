@@ -638,7 +638,7 @@ def main(
                 if temp_path.exists():
                     logger.debug(f'Cleaning up "{temp_path}"')
                     downloader.cleanup_temp_path()
-                if wait_interval > 0:
+                if wait_interval > 0 and queue_index != len(download_queue):
                     logger.debug(
                         f"Waiting for {wait_interval} second(s) before continuing"
                     )
