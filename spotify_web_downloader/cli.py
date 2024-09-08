@@ -109,6 +109,11 @@ def load_config_file(
     help="Interpret URLs as paths to text files containing URLs.",
 )
 @click.option(
+    "--save-playlist",
+    is_flag=True,
+    help="Save a M3U8 playlist file when downloading a playlist.",
+)
+@click.option(
     "--lrc-only",
     "-l",
     is_flag=True,
@@ -201,6 +206,48 @@ def load_config_file(
     help="Remux mode.",
 )
 @click.option(
+    "--template-folder-album",
+    type=str,
+    default=downloader_sig.parameters["template_folder_album"].default,
+    help="Template folder for tracks that are part of an album.",
+)
+@click.option(
+    "--template-folder-compilation",
+    type=str,
+    default=downloader_sig.parameters["template_folder_compilation"].default,
+    help="Template folder for tracks that are part of a compilation album.",
+)
+@click.option(
+    "--template-file-single-disc",
+    type=str,
+    default=downloader_sig.parameters["template_file_single_disc"].default,
+    help="Template file for the tracks that are part of a single-disc album.",
+)
+@click.option(
+    "--template-file-multi-disc",
+    type=str,
+    default=downloader_sig.parameters["template_file_multi_disc"].default,
+    help="Template file for the tracks that are part of a multi-disc album.",
+)
+@click.option(
+    "--template-folder-no-album",
+    type=str,
+    default=downloader_sig.parameters["template_folder_no_album"].default,
+    help="Template folder for the tracks that are not part of an album.",
+)
+@click.option(
+    "--template-file-no-album",
+    type=str,
+    default=downloader_sig.parameters["template_file_no_album"].default,
+    help="Template file for the tracks that are not part of an album.",
+)
+@click.option(
+    "--template-file-playlist",
+    type=str,
+    default=downloader_sig.parameters["template_file_playlist"].default,
+    help="Template file for the M3U8 playlist.",
+)
+@click.option(
     "--date-tag-template",
     type=str,
     default=downloader_sig.parameters["date_tag_template"].default,
@@ -220,30 +267,6 @@ def load_config_file(
 )
 # DownloaderSong specific options
 @click.option(
-    "--template-folder-album",
-    type=str,
-    default=downloader_song_sig.parameters["template_folder_album"].default,
-    help="Template of the album folders as a format string.",
-)
-@click.option(
-    "--template-folder-compilation",
-    type=str,
-    default=downloader_song_sig.parameters["template_folder_compilation"].default,
-    help="Template of the compilation album folders as a format string.",
-)
-@click.option(
-    "--template-file-single-disc",
-    type=str,
-    default=downloader_song_sig.parameters["template_file_single_disc"].default,
-    help="Template of the song files for single-disc albums as a format string.",
-)
-@click.option(
-    "--template-file-multi-disc",
-    type=str,
-    default=downloader_song_sig.parameters["template_file_multi_disc"].default,
-    help="Template of the song files for multi-disc albums as a format string.",
-)
-@click.option(
     "--download-mode-song",
     type=DownloadModeSong,
     default=downloader_song_sig.parameters["download_mode"].default,
@@ -257,18 +280,6 @@ def load_config_file(
     help="Download songs in premium quality.",
 )
 # DownloaderMusicVideo specific options
-@click.option(
-    "--template-folder-music-video",
-    type=str,
-    default=downloader_music_video_sig.parameters["template_folder"].default,
-    help="Template of the music video folders as a format string.",
-)
-@click.option(
-    "--template-file-music-video",
-    type=str,
-    default=downloader_music_video_sig.parameters["template_file"].default,
-    help="Template of the music video files as a format string.",
-)
 @click.option(
     "--download-mode-video",
     type=DownloadModeVideo,
@@ -291,6 +302,7 @@ def main(
     save_cover: bool,
     overwrite: bool,
     read_urls_as_txt: bool,
+    save_playlist: bool,
     lrc_only: bool,
     no_lrc: bool,
     config_path: Path,
@@ -313,10 +325,11 @@ def main(
     template_folder_compilation: str,
     template_file_single_disc: str,
     template_file_multi_disc: str,
+    template_folder_no_album: str,
+    template_file_no_album: str,
+    template_file_playlist: str,
     download_mode_song: DownloadModeSong,
     premium_quality: bool,
-    template_folder_music_video: str,
-    template_file_music_video: str,
     download_mode_video: DownloadModeVideo,
     no_config_file: bool,
 ) -> None:
@@ -342,23 +355,24 @@ def main(
         aria2c_path,
         nm3u8dlre_path,
         remux_mode,
+        template_folder_album,
+        template_folder_compilation,
+        template_file_single_disc,
+        template_file_multi_disc,
+        template_folder_no_album,
+        template_file_no_album,
+        template_file_playlist,
         date_tag_template,
         exclude_tags,
         truncate,
     )
     downloader_song = DownloaderSong(
         downloader,
-        template_folder_album,
-        template_folder_compilation,
-        template_file_single_disc,
-        template_file_multi_disc,
         download_mode_song,
         premium_quality,
     )
     downloader_music_video = DownloaderMusicVideo(
         downloader,
-        template_folder_music_video,
-        template_file_music_video,
         download_mode_video,
     )
     if not lrc_only:
@@ -420,19 +434,25 @@ def main(
                 exc_info=print_exceptions,
             )
             continue
-        for queue_index, queue_item in enumerate(download_queue, start=1):
-            queue_progress = f"Track {queue_index}/{len(download_queue)} from URL {url_index}/{len(urls)}"
-            track = queue_item.metadata
+        tracks_metadata = download_queue.tracks_metadata
+        playlist_metadata = download_queue.playlist_metadata
+        for index, track_metadata in enumerate(tracks_metadata, start=1):
+            queue_progress = (
+                f"Track {index}/{len(tracks_metadata)} from URL {url_index}/{len(urls)}"
+            )
             try:
-                logger.info(f'({queue_progress}) Downloading "{track["name"]}"')
-                track_id = track["id"]
+                logger.info(
+                    f'({queue_progress}) Downloading "{track_metadata["name"]}"'
+                )
+                remuxed_path = None
+                track_id = track_metadata["id"]
                 logger.debug("Getting GID metadata")
                 gid = spotify_api.track_id_to_gid(track_id)
                 metadata_gid = spotify_api.get_gid_metadata(gid)
                 if download_music_video and not metadata_gid.get("original_video"):
                     music_video_id = (
                         downloader_music_video.get_music_video_id_from_song_id(
-                            track_id, queue_item.metadata["artists"][0]["id"]
+                            track_id, track_metadata["artists"][0]["id"]
                         )
                     )
                     if not music_video_id:
@@ -465,7 +485,15 @@ def main(
                         track_credits,
                         lyrics.unsynced,
                     )
-                    final_path = downloader_song.get_final_path(tags)
+                    if playlist_metadata:
+                        tags = {
+                            **tags,
+                            **downloader.get_playlist_tags(
+                                playlist_metadata,
+                                index,
+                            ),
+                        }
+                    final_path = downloader.get_final_path(tags, ".m4a")
                     lrc_path = downloader_song.get_lrc_path(final_path)
                     cover_path = downloader_song.get_cover_path(final_path)
                     cover_url = downloader.get_cover_url(metadata_gid, "LARGE")
@@ -504,10 +532,6 @@ def main(
                             remuxed_path,
                             decryption_key,
                         )
-                        logger.debug("Applying tags")
-                        downloader.apply_tags(remuxed_path, tags, cover_url)
-                        logger.debug(f'Moving to "{final_path}"')
-                        downloader.move_to_final_path(remuxed_path, final_path)
                     if no_lrc or not lyrics.synced:
                         pass
                     elif lrc_path.exists() and not overwrite:
@@ -517,15 +541,6 @@ def main(
                     else:
                         logger.debug(f'Saving synced lyrics to "{lrc_path}"')
                         downloader_song.save_lrc(lrc_path, lyrics.synced)
-                    if lrc_only or not save_cover:
-                        pass
-                    elif cover_path.exists() and not overwrite:
-                        logger.debug(
-                            f'Cover already exists at "{cover_path}", skipping'
-                        )
-                    elif cover_url is not None:
-                        logger.debug(f'Saving cover to "{cover_path}"')
-                        downloader.save_cover(cover_path, cover_url)
                 elif not spotify_api.config_info["isPremium"]:
                     logger.error(
                         f"({queue_progress}) Cannot download music videos with a free account, skipping"
@@ -548,7 +563,15 @@ def main(
                         album_metadata,
                         track_credits,
                     )
-                    final_path = downloader_music_video.get_final_path(tags)
+                    if playlist_metadata:
+                        tags = {
+                            **tags,
+                            **downloader.get_playlist_tags(
+                                playlist_metadata,
+                                index,
+                            ),
+                        }
+                    final_path = downloader.get_final_path(tags, ".m4v")
                     cover_path = downloader_music_video.get_cover_path(final_path)
                     if final_path.exists() and not overwrite:
                         logger.warning(
@@ -606,7 +629,10 @@ def main(
                             encrypted_path_audio,
                         )
                         remuxed_path = downloader.get_remuxed_path(track_id, ".m4v")
-                        logger.debug(f'Decrypting/Remuxing to "{remuxed_path}"')
+                        logger.debug(
+                            f'Decrypting video/audio to "{decrypted_path_video}"/"{decrypted_path_audio}" '
+                            f'and remuxing to "{remuxed_path}"'
+                        )
                         downloader_music_video.remux(
                             decryption_key,
                             encrypted_path_video,
@@ -615,30 +641,40 @@ def main(
                             decrypted_path_audio,
                             remuxed_path,
                         )
-                        logger.debug("Applying tags")
-                        downloader.apply_tags(remuxed_path, tags, cover_url)
-                        logger.debug(f'Moving to "{final_path}"')
-                        downloader.move_to_final_path(remuxed_path, final_path)
-                    if save_cover:
-                        cover_path = downloader_music_video.get_cover_path(final_path)
-                        if cover_path.exists() and not overwrite:
-                            logger.debug(
-                                f'Cover already exists at "{cover_path}", skipping'
-                            )
-                        elif cover_url is not None:
-                            logger.debug(f'Saving cover to "{cover_path}"')
-                            downloader.save_cover(cover_path, cover_url)
+                if (
+                    not metadata_gid.get("original_video") and lrc_only
+                ) or not save_cover:
+                    pass
+                elif cover_path.exists() and not overwrite:
+                    logger.debug(f'Cover already exists at "{cover_path}", skipping')
+                elif cover_url is not None:
+                    logger.debug(f'Saving cover to "{cover_path}"')
+                    downloader.save_cover(cover_path, cover_url)
+                if remuxed_path:
+                    logger.debug("Applying tags")
+                    downloader.apply_tags(remuxed_path, tags, cover_url)
+                    logger.debug(f'Moving to "{final_path}"')
+                    downloader.move_to_final_path(remuxed_path, final_path)
+                    if save_playlist and playlist_metadata:
+                        playlist_file_path = downloader.get_playlist_file_path(tags)
+                        logger.debug(
+                            f'Updating M3U8 playlist from "{playlist_file_path}"'
+                        )
+                        downloader.update_playlist_file(
+                            playlist_file_path,
+                            final_path,
+                        )
             except Exception as e:
                 error_count += 1
                 logger.error(
-                    f'({queue_progress}) Failed to download "{track["name"]}"',
+                    f'({queue_progress}) Failed to download "{track_metadata["name"]}"',
                     exc_info=print_exceptions,
                 )
             finally:
                 if temp_path.exists():
                     logger.debug(f'Cleaning up "{temp_path}"')
                     downloader.cleanup_temp_path()
-                if wait_interval > 0 and queue_index != len(download_queue):
+                if wait_interval > 0 and index != len(tracks_metadata):
                     logger.debug(
                         f"Waiting for {wait_interval} second(s) before continuing"
                     )

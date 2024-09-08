@@ -16,52 +16,16 @@ class DownloaderSong:
     def __init__(
         self,
         downloader: Downloader,
-        template_folder_album: str = "{album_artist}/{album}",
-        template_folder_compilation: str = "Compilations/{album}",
-        template_file_single_disc: str = "{track:02d} {title}",
-        template_file_multi_disc: str = "{disc}-{track:02d} {title}",
         download_mode: DownloadModeSong = DownloadModeSong.YTDLP,
         premium_quality: bool = False,
     ):
         self.downloader = downloader
-        self.template_folder_album = template_folder_album
-        self.template_folder_compilation = template_folder_compilation
-        self.template_file_single_disc = template_file_single_disc
-        self.template_file_multi_disc = template_file_multi_disc
         self.download_mode = download_mode
         self.premium_quality = premium_quality
         self._set_codec()
 
     def _set_codec(self):
         self.codec = "MP4_256" if self.premium_quality else "MP4_128"
-
-    def get_final_path(self, tags: dict) -> Path:
-        final_path_folder = (
-            self.template_folder_compilation.split("/")
-            if tags["compilation"]
-            else self.template_folder_album.split("/")
-        )
-        final_path_file = (
-            self.template_file_multi_disc.split("/")
-            if tags["disc_total"] > 1
-            else self.template_file_single_disc.split("/")
-        )
-        final_path_folder = [
-            self.downloader.get_sanitized_string(i.format(**tags), True)
-            for i in final_path_folder
-        ]
-        final_path_file = [
-            self.downloader.get_sanitized_string(i.format(**tags), True)
-            for i in final_path_file[:-1]
-        ] + [
-            self.downloader.get_sanitized_string(
-                final_path_file[-1].format(**tags), False
-            )
-            + ".m4a"
-        ]
-        return self.downloader.output_path.joinpath(*final_path_folder).joinpath(
-            *final_path_file
-        )
 
     def get_decryption_key(self, pssh: str) -> str:
         try:

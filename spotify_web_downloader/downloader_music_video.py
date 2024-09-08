@@ -21,13 +21,9 @@ class DownloaderMusicVideo:
     def __init__(
         self,
         downloader: Downloader,
-        template_folder: str = "{artist}/Unknown Album",
-        template_file: str = "{title}",
         download_mode: DownloadModeVideo = DownloadModeVideo.YTDLP,
     ):
         self.downloader = downloader
-        self.template_folder = template_folder
-        self.template_file = template_file
         self.download_mode = download_mode
 
     def get_music_video_id_from_song_id(
@@ -44,26 +40,6 @@ class DownloaderMusicVideo:
         if not related_music_videos:
             return
         return related_music_videos[0]["trackOfVideo"]["data"]["uri"].split(":")[-1]
-
-    def get_final_path(self, tags: dict) -> Path:
-        final_path_folder = self.template_folder.split("/")
-        final_path_file = self.template_file.split("/")
-        final_path_folder = [
-            self.downloader.get_sanitized_string(i.format(**tags), True)
-            for i in final_path_folder
-        ]
-        final_path_file = [
-            self.downloader.get_sanitized_string(i.format(**tags), True)
-            for i in final_path_file[:-1]
-        ] + [
-            self.downloader.get_sanitized_string(
-                final_path_file[-1].format(**tags), False
-            )
-            + ".mp4"
-        ]
-        return self.downloader.output_path.joinpath(*final_path_folder).joinpath(
-            *final_path_file
-        )
 
     def get_manifest(self, metadata_gid: dict) -> dict:
         return self.downloader.spotify_api.get_video_manifest(
