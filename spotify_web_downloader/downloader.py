@@ -30,7 +30,7 @@ class Downloader:
         spotify_api: SpotifyApi,
         output_path: Path = Path("./Spotify"),
         temp_path: Path = Path("./temp"),
-        wvd_path: Path = None,
+        wvd_path: Path = Path("./device.wvd"),
         ffmpeg_path: str = "ffmpeg",
         mp4box_path: str = "MP4Box",
         mp4decrypt_path: str = "mp4decrypt",
