@@ -67,7 +67,7 @@ class SpotifyApi:
                 "app-platform": "WebPlayer",
             }
         )
-        home_page = self.get_home_page(self.session.cookies.get("sp_dc"))
+        home_page = self.get_home_page()
         self.session_info = json.loads(
             re.search(
                 r'<script id="session" data-testid="session" type="application/json">(.+?)</script>',
@@ -231,12 +231,9 @@ class SpotifyApi:
         check_response(response)
         return response.json()
 
-    @staticmethod
-    def get_home_page(sp_dc: str = None) -> str:
-        cookies = {"sp_dc": sp_dc} if sp_dc else None
-        response = requests.get(
+    def get_home_page(self) -> str:
+        response = self.session.get(
             SpotifyApi.SPOTIFY_HOME_PAGE_URL,
-            cookies=cookies,
         )
         check_response(response)
         return response.text
