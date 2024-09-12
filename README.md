@@ -11,6 +11,8 @@ A Python CLI app for downloading songs and music videos directly from Spotify.
 
 ## Prerequisites
 * Python 3.8 or higher
+* A .wvd file
+    * A .wvd file contains the Widevine keys from a device. The easiest method of obtaining one is using KeyDive, which extracts it from an Android device. Detailed instructions can be found here: https://github.com/hyugogirubato/KeyDive.
 * The cookies file of your Spotify browser session in Netscape format (free or premium)
     * You can get your cookies by using one of the following extensions on your browser of choice at the Spotify website with your account signed in:
         * Firefox: https://addons.mozilla.org/addon/export-cookies-txt
@@ -26,7 +28,7 @@ A Python CLI app for downloading songs and music videos directly from Spotify.
     ```bash
     pip install spotify-web-downloader
     ```
-2. Place your cookies file in the directory from which you will be running spotify-web-downloader and name it `cookies.txt`.
+2. Place your cookies file and the .wvd file in the directory from which you will be running spotify-web-downloader and name it `cookies.txt` and `device.wvd` respectively.
 
 ## Usage
 ```bash
@@ -66,7 +68,7 @@ Config file values can be overridden using command line arguments.
 | `--cookies-path`, `-c` / `cookies_path`                         | Path to .txt cookies file.                                                   | `./cookies.txt`                                |
 | `--output-path`, `-o` / `output_path`                           | Path to output directory.                                                    | `./Spotify`                                    |
 | `--temp-path` / `temp_path`                                     | Path to temporary directory.                                                 | `./temp`                                       |
-| `--wvd-path` / `wvd_path`                                       | Path to .wvd file.                                                           | `null`                                         |
+| `--wvd-path` / `wvd_path`                                       | Path to .wvd file.                                                           | `./device.wvd`                                 |
 | `--ffmpeg-path` / `ffmpeg_path`                                 | Path to FFmpeg binary.                                                       | `ffmpeg`                                       |
 | `--mp4box-path` / `mp4box_path`                                 | Path to MP4Box binary.                                                       | `MP4Box`                                       |
 | `--mp4decrypt-path` / `mp4decrypt_path`                         | Path to mp4decrypt binary.                                                   | `mp4decrypt`                                   |

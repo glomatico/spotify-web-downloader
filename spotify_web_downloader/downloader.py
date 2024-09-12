@@ -5,7 +5,6 @@ import functools
 import re
 import shutil
 import subprocess
-import typing
 from pathlib import Path
 
 import requests
@@ -14,7 +13,6 @@ from pywidevine import Cdm, Device
 
 from .constants import *
 from .enums import RemuxMode
-from .hardcoded_wvd import HARDCODED_WVD
 from .models import DownloadQueue, UrlInfo
 from .spotify_api import SpotifyApi
 from .utils import check_response
@@ -103,10 +101,7 @@ class Downloader:
             self.subprocess_additional_args = {}
 
     def set_cdm(self) -> None:
-        if self.wvd_path:
-            self.cdm = Cdm.from_device(Device.load(self.wvd_path))
-        else:
-            self.cdm = Cdm.from_device(Device.loads(HARDCODED_WVD))
+        self.cdm = Cdm.from_device(Device.load(self.wvd_path))
 
     def get_url_info(self, url: str) -> UrlInfo:
         url_regex_result = re.search(self.URL_RE, url)
