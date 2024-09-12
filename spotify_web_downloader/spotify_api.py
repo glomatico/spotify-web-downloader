@@ -91,7 +91,7 @@ class SpotifyApi:
             }
         )
 
-    def refresh_session(self):
+    def _refresh_session_auth(self):
         session_expires_in = int(self.session_info["accessTokenExpirationTimestampMs"])
         if (
             datetime.datetime.now() - self.session_auth_timestamp
@@ -108,19 +108,19 @@ class SpotifyApi:
         return base62.encode(int(gid, 16), charset=base62.CHARSET_INVERTED).zfill(22)
 
     def get_gid_metadata(self, gid: str) -> dict:
-        self.refresh_session()
+        self._refresh_session_auth()
         response = self.session.get(self.GID_METADATA_API_URL.format(gid=gid))
         check_response(response)
         return response.json()
 
     def get_video_manifest(self, gid: str) -> dict:
-        self.refresh_session()
+        self._refresh_session_auth()
         response = self.session.get(self.VIDEO_MANIFEST_API_URL.format(gid=gid))
         check_response(response)
         return response.json()
 
     def get_widevine_license_music(self, challenge: bytes) -> bytes:
-        self.refresh_session()
+        self._refresh_session_auth()
         response = self.session.post(
             self.WIDEVINE_LICENSE_API_URL.format(type="audio"),
             challenge,
@@ -129,7 +129,7 @@ class SpotifyApi:
         return response.content
 
     def get_widevine_license_video(self, challenge: bytes) -> bytes:
-        self.refresh_session()
+        self._refresh_session_auth()
         response = self.session.post(
             self.WIDEVINE_LICENSE_API_URL.format(type="video"),
             challenge,
@@ -138,7 +138,7 @@ class SpotifyApi:
         return response.content
 
     def get_lyrics(self, track_id: str) -> dict | None:
-        self.refresh_session()
+        self._refresh_session_auth()
         response = self.session.get(self.LYRICS_API_URL.format(track_id=track_id))
         if response.status_code == 404:
             return None
@@ -151,13 +151,13 @@ class SpotifyApi:
         return response.json()["pssh"]
 
     def get_stream_url(self, file_id: str) -> str:
-        self.refresh_session()
+        self._refresh_session_auth()
         response = self.session.get(self.STREAM_URL_API_URL.format(file_id=file_id))
         check_response(response)
         return response.json()["cdnurl"][0]
 
     def get_track(self, track_id: str) -> dict:
-        self.refresh_session()
+        self._refresh_session_auth()
         response = self.session.get(
             self.METADATA_API_URL.format(type="tracks", track_id=track_id)
         )
@@ -183,7 +183,7 @@ class SpotifyApi:
         album_id: str,
         extend: bool = True,
     ) -> dict:
-        self.refresh_session()
+        self._refresh_session_auth()
         response = self.session.get(
             self.METADATA_API_URL.format(type="albums", track_id=album_id)
         )
@@ -204,7 +204,7 @@ class SpotifyApi:
         playlist_id: str,
         extend: bool = True,
     ) -> dict:
-        self.refresh_session()
+        self._refresh_session_auth()
         response = self.session.get(
             self.METADATA_API_URL.format(type="playlists", track_id=playlist_id)
         )
@@ -221,7 +221,7 @@ class SpotifyApi:
         return playlist
 
     def get_now_playing_view(self, track_id: str, artist_id: str) -> dict:
-        self.refresh_session()
+        self._refresh_session_auth()
         response = self.session.get(
             self.PATHFINDER_API_URL,
             params={
@@ -248,7 +248,7 @@ class SpotifyApi:
         return response.json()
 
     def get_track_credits(self, track_id: str) -> dict:
-        self.refresh_session()
+        self._refresh_session_auth()
         response = self.session.get(
             self.TRACK_CREDITS_API_URL.format(track_id=track_id)
         )
