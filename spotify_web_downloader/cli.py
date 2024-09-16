@@ -655,15 +655,14 @@ def main(
                     downloader.apply_tags(remuxed_path, tags, cover_url)
                     logger.debug(f'Moving to "{final_path}"')
                     downloader.move_to_final_path(remuxed_path, final_path)
-                    if save_playlist and playlist_metadata:
-                        playlist_file_path = downloader.get_playlist_file_path(tags)
-                        logger.debug(
-                            f'Updating M3U8 playlist from "{playlist_file_path}"'
-                        )
-                        downloader.update_playlist_file(
-                            playlist_file_path,
-                            final_path,
-                        )
+                if not lrc_only and save_playlist and playlist_metadata:
+                    playlist_file_path = downloader.get_playlist_file_path(tags)
+                    logger.debug(f'Updating M3U8 playlist from "{playlist_file_path}"')
+                    downloader.update_playlist_file(
+                        playlist_file_path,
+                        final_path,
+                        index,
+                    )
             except Exception as e:
                 error_count += 1
                 logger.error(

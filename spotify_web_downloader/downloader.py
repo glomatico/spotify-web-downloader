@@ -193,6 +193,7 @@ class Downloader:
         self,
         playlist_file_path: Path,
         final_path: Path,
+        playlist_track: int,
     ):
         playlist_file_path.parent.mkdir(parents=True, exist_ok=True)
         playlist_file_path_parent_parts_len = len(playlist_file_path.parent.parts)
@@ -201,8 +202,18 @@ class Downloader:
             ("../" * (playlist_file_path_parent_parts_len - output_path_parts_len)),
             *final_path.parts[output_path_parts_len:],
         )
-        with playlist_file_path.open("a", encoding="utf8") as playlist_file:
-            playlist_file.write(final_path_relative.as_posix() + "\n")
+        playlist_file_lines = (
+            playlist_file_path.open("r", encoding="utf8").readlines()
+            if playlist_file_path.exists()
+            else []
+        )
+        if len(playlist_file_lines) < playlist_track:
+            playlist_file_lines.extend(
+                "\n" for _ in range(playlist_track - len(playlist_file_lines))
+            )
+        playlist_file_lines[playlist_track - 1] = final_path_relative.as_posix() + "\n"
+        with playlist_file_path.open("w", encoding="utf8") as playlist_file:
+            playlist_file.writelines(playlist_file_lines)
 
     def get_sanitized_string(self, dirty_string: str, is_folder: bool) -> str:
         dirty_string = re.sub(
