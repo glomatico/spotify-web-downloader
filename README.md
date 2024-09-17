@@ -12,7 +12,8 @@ A Python CLI app for downloading songs and music videos directly from Spotify.
 ## Prerequisites
 * Python 3.8 or higher
 * A .wvd file
-    * A .wvd file contains the Widevine keys from a device. The easiest method of obtaining one is using KeyDive, which extracts it from an Android device. Detailed instructions can be found here: https://github.com/hyugogirubato/KeyDive.
+    * A .wvd file contains the Widevine keys from a device and is required to decrypt the files. The easiest method of obtaining one is using KeyDive, which extracts it from an Android device. Detailed instructions can be found here: https://github.com/hyugogirubato/KeyDive.
+    * .wvd files extracted from emulated devices may not work.
 * The cookies file of your Spotify browser session in Netscape format (free or premium)
     * You can get your cookies by using one of the following extensions on your browser of choice at the Spotify website with your account signed in:
         * Firefox: https://addons.mozilla.org/addon/export-cookies-txt
