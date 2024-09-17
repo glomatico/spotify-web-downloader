@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 import functools
 import json
 import re
@@ -72,7 +71,6 @@ class SpotifyApi:
 
     def _set_session_auth(self):
         home_page = self.get_home_page()
-        self.session_auth_timestamp = datetime.datetime.now()
         self.session_info = json.loads(
             re.search(
                 r'<script id="session" data-testid="session" type="application/json">(.+?)</script>',
@@ -92,10 +90,11 @@ class SpotifyApi:
         )
 
     def _refresh_session_auth(self):
-        session_expires_in = int(self.session_info["accessTokenExpirationTimestampMs"])
-        if (
-            datetime.datetime.now() - self.session_auth_timestamp
-        ).seconds < session_expires_in:
+        timestamp_session_expire = int(
+            self.session_info["accessTokenExpirationTimestampMs"]
+        )
+        timestamp_now = time.time() * 1000
+        if timestamp_now < timestamp_session_expire:
             return
         self._set_session_auth()
 
