@@ -1,3 +1,6 @@
+# WARNING! This project has been discontinued. Please use Votify instead: https://github.com/glomatico/votify
+
+
 # Spotify Web Downloader
 A Python CLI app for downloading songs and music videos directly from Spotify.
 
