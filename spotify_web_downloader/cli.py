@@ -137,6 +137,11 @@ def load_config_file(
     help="Log level.",
 )
 @click.option(
+    "--log-to-file",
+    is_flag=True,
+    help="Output log to log.txt as well as console",
+)
+@click.option(
     "--print-exceptions",
     is_flag=True,
     help="Print exceptions.",
@@ -307,6 +312,7 @@ def main(
     no_lrc: bool,
     config_path: Path,
     log_level: str,
+    log_to_file: bool,
     print_exceptions: bool,
     cookies_path: Path,
     output_path: Path,
@@ -333,12 +339,23 @@ def main(
     download_mode_video: DownloadModeVideo,
     no_config_file: bool,
 ) -> None:
-    logging.basicConfig(
-        format="[%(levelname)-8s %(asctime)s] %(message)s",
-        datefmt="%H:%M:%S",
-    )
-    logger = logging.getLogger(__name__)
-    logger.setLevel(log_level)
+    if log_to_file: # create a logger with two handlers (one for each output stream)
+        logger = logging.getLogger(__name__)
+        logger.setLevel(log_level)
+        console_handler = logging.StreamHandler()
+        file_handler = logging.FileHandler('log.txt')
+        formatter = logging.Formatter("[%(levelname)-8s %(asctime)s] %(message)s", datefmt="%H:%M:%S")
+        console_handler.setFormatter(formatter)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+        logger.addHandler(file_handler)
+    else:   # just output to console
+        logging.basicConfig(
+            format="[%(levelname)-8s %(asctime)s] %(message)s",
+            datefmt="%H:%M:%S",
+        )
+        logger = logging.getLogger(__name__)
+        logger.setLevel(log_level)
     logger.debug("Starting downloader")
     if not cookies_path.exists():
         logger.critical(X_NOT_FOUND_STRING.format("Cookies file", cookies_path))
